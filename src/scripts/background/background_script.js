@@ -8,11 +8,15 @@ console.log("test");
     // check if panel is already open
     if (typeof panelWindow == 'undefined' || panelWindow.closed) {
 
-      chrome.windows.create({url: chrome.extension.getURL(
-          'pages/mainpanel.html'), width: 500, height: 800, focused: true,
-          type: 'panel'}, function(winInfo) {
-        panelWindow = winInfo;
-      });
+      chrome.windows.create({
+		  url: chrome.extension.getURL('pages/mainpanel.html'), 
+          width: 500, height: 800, left: 0, top: 0, 
+          focused: true,
+          type: 'panel'
+          }, 
+          function(winInfo) {
+			panelWindow = winInfo;
+		  });
     } else {
       chrome.windows.update(panelWindow.id, {focused: true});
     }
@@ -28,5 +32,8 @@ console.log("test");
     }
   });
 
-  openMainPanel();
+  //openMainPanel();
+  
+  
 })();
+

@@ -20,6 +20,7 @@ function findLists(event){
 function findList(node){
   var xpath = nodeToXPath(node);
   console.log(xpath);
+  var possibleLists = [];
   for (var i = 0; i<xpath.length; i++){
     var char = xpath[i];
     if (isNumber(char)) {
@@ -28,9 +29,18 @@ function findList(node){
 	j += 1;
       }
       // + and - 1 below to get rid of the brackets
-      findItems(xpath.slice(0,i-1),xpath.slice(j+1,xpath.length));
+      var listNodes = findItems(xpath.slice(0,i-1),xpath.slice(j+1,xpath.length));
+      if (listNodes){
+	var listTexts = _.map(listNodes,function(a){return $(a).text();});
+	possibleLists.push(listTexts);
+      }
     }
   }
+  chrome.runtime.sendMessage({
+    from: "content",
+    subject: "lists",
+    lists: possibleLists
+  });
 }
 
 function findItems(prefix,suffix){
@@ -65,11 +75,12 @@ function findItems(prefix,suffix){
       }
     }
   }
-  if (count > 1){
+  if (listNodes.length > 1){
     for (var i = 0; i<listNodes.length; i++){
       var listNode = listNodes[i];
       $(listNode).css('background-color', 'blue');
     }
+    return listNodes;
   }
 }
 
