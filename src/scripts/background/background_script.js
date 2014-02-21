@@ -1,7 +1,8 @@
 //open mainpanel
-console.log("test");
+
+var currentlyOn = false;
+
 (function() {
-  console.log("mainpanel stuff");
   var panelWindow = undefined;
 
   function openMainPanel(hide) {
@@ -14,16 +15,34 @@ console.log("test");
           focused: true,
           type: 'panel'
           }, 
-          function(winInfo) {
-			panelWindow = winInfo;
-		  });
+          function(winInfo) {panelWindow = winInfo;}
+      );
     } else {
       chrome.windows.update(panelWindow.id, {focused: true});
     }
   }
 
   chrome.browserAction.onClicked.addListener(function(tab) {
-    openMainPanel();
+    if (!currentlyOn){
+      openMainPanel();
+    }
+    currentlyOn = !currentlyOn;
+    console.log("currently on: "+currentlyOn);
+    sendCurrentlyOn();
+  });
+  
+  function sendCurrentlyOn(){
+    chrome.tabs.getSelected(null, function(tab) {
+      chrome.tabs.sendRequest(tab.id, {from: 'background', subject: 'currentlyOn', currentlyOn: currentlyOn});
+    });
+  }
+  
+  chrome.runtime.onMessage.addListener(function(msg, sender) {
+    console.log(msg);
+    if (msg.from && (msg.from === "content")
+            && msg.subject && (msg.subject = "currentlyOnRequest")) {
+        sendCurrentlyOn();
+    }
   });
 
   chrome.windows.onRemoved.addListener(function(winId) {

@@ -1,6 +1,31 @@
-document.addEventListener('click', findLists, false);
+var currentlyOn = false;
+
+function setUp(){
+  console.log("Setting up.");
+  
+  document.addEventListener('click', findLists, false);
+
+  chrome.extension.onRequest.addListener(function(msg, sender) {
+    console.log(msg);
+    if (msg.from && (msg.from === "background")
+            && msg.subject && (msg.subject = "currentlyOn")) {
+        currentlyOn = msg.currentlyOn;
+    }
+  });
+  
+  chrome.runtime.sendMessage({
+	from: "content",
+	subject: "requestCurrentlyOn"
+  });
+}
+
+$(setUp);
+
 
 function findLists(event){
+  if (!currentlyOn){
+    return;
+  }
   event.stopPropagation();
   event.preventDefault();
   var $target = $(event.target);
