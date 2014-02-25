@@ -16,10 +16,9 @@ $(setUp);
 
 function showLists(lists){
   var $tabs = $("#tabs");
-  var $ul = $("#tab-ul");
+  var $ul = $("ul");
   
   //clear out content from past clicks
-  $ul.empty();
   $tabs.empty();
   $tabs.append($ul);
   

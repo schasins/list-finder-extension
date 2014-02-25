@@ -61,6 +61,7 @@ function findList(node){
       }
     }
   }
+  console.log(possibleLists);
   chrome.runtime.sendMessage({
     from: "content",
     subject: "lists",
@@ -70,19 +71,14 @@ function findList(node){
 
 function findItems(prefix,suffix){
   console.log("******************************");
-  console.log(prefix);
-  console.log(suffix);
+  console.log(prefix+"[*]"+suffix);
   var slashIndex = prefix.lastIndexOf("/")
   var parentXpath = prefix.slice(0,slashIndex);
-  console.log(parentXpath);
   var nodes = xPathToNodes(parentXpath);
-  console.log(nodes);
   
   var node = nodes[0];
   
   var targetName = prefix.slice(slashIndex+1,prefix.length).toLowerCase();
-  console.log(targetName);
-  console.log("---");
   var listNodes = [];
   var children = node.childNodes;
   console.log(children);
@@ -93,7 +89,6 @@ function findItems(prefix,suffix){
     if (targetName === name.toLowerCase()){
       count += 1;
       var newListNodes = xPathToNodes(prefix+"["+count+"]"+suffix);
-      //console.log(newListNode);
       var newListNode = newListNodes[0];
       if (newListNode){
 	listNodes.push(newListNode);
@@ -101,6 +96,7 @@ function findItems(prefix,suffix){
     }
   }
   if (listNodes.length > 1){
+    console.log(listNodes);
     for (var i = 0; i<listNodes.length; i++){
       var listNode = listNodes[i];
       $(listNode).css('background-color', 'blue');
