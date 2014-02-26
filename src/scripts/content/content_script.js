@@ -102,7 +102,15 @@ function findList(node){
 
 function findItemsUsefulIterations(xpathList){
   console.log(xpathList);
-  return findItemsUsefulIterationsRecurse("HTML", xpathList);
+  var listNodes = findItemsUsefulIterationsRecurse("HTML", xpathList);
+  if (listNodes.length > 1){
+    console.log(listNodes);
+    for (var i = 0; i<listNodes.length; i++){
+      var listNode = listNodes[i];
+      $(listNode).css('background-color', 'blue');
+    }
+    return listNodes;
+  }
 }
 
 function findItemsUsefulIterationsRecurse(prefix,suffixList){
