@@ -15,12 +15,16 @@ function setUp(){
 $(setUp);
 
 function showLists(lists){
-  var $tabs = $("#tabs");
-  var $ul = $("ul");
-  
+  var $body = $("body");
   //clear out content from past clicks
-  $tabs.empty();
-  $tabs.append($ul);
+  $body.empty();
+  
+  
+  var $div = $("<div></div>");
+  var $ul = $("<ul></ul>");
+  
+  $body.append($div);
+  $div.append($ul);
   
   for (var i = 0; i<lists.length; i++){
     var list = lists[i];
@@ -34,7 +38,7 @@ function showLists(lists){
     console.log(contentString);
     var newList = $("<div id='fragment-"+i+"'>"+contentString+"</div>");
     console.log(newList); 
-    $tabs.append(newList);
+    $div.append(newList);
   }
-  $tabs.tabs();
+  $div.tabs();
 }
