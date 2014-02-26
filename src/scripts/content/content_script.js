@@ -37,9 +37,23 @@ function findLists(event){
   
   var matchedNodes = $('*').filter(function(){ return $(this).text() === text;});
   matchedNodes.css('background-color', 'red');
+  var possibleLists = [];
   for (var i = 0; i<matchedNodes.length; i++){
-    findList(matchedNodes[i]);
+    var newLists = findList(matchedNodes[i]);
+    //keep in mind that we may have both div and a div's a or something
+    //so we may get different matchedNodes turning up same lists.  check
+    for (var j = 0; j<newLists.length; j++){
+      var newList = newLists[j];
+      if (arrayNotInArrayOfArrays(newList,possibleLists)){
+	possibleLists.push(newList);
+      }
+    }
   }
+  chrome.runtime.sendMessage({
+    from: "content",
+    subject: "lists",
+    lists: possibleLists
+  });
 }
 
 function findList(node){
@@ -62,11 +76,7 @@ function findList(node){
     }
   }
   console.log(possibleLists);
-  chrome.runtime.sendMessage({
-    from: "content",
-    subject: "lists",
-    lists: possibleLists
-  });
+  return possibleLists;
 }
 
 function findItems(prefix,suffix){
@@ -103,6 +113,28 @@ function findItems(prefix,suffix){
     }
     return listNodes;
   }
+}
+
+/*** HELPER FUNCTIONS ***/
+
+function arrayNotInArrayOfArrays(array,listOfArrays){
+  for (var i = 0; i< listOfArrays.length; i++){
+    var currArray = listOfArrays[i];
+    if (currArray.length != array.length){
+      continue;
+    }
+    var matched = true;
+    for (var j = 0; j<currArray.length; j++){
+      if (array[j] != currArray[j]){
+	matched = false;
+	break;
+      }
+    }
+    if (matched){
+      return false;
+    }
+  }
+  return true;
 }
 
 function isNumber(n) {
