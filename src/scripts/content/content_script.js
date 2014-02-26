@@ -60,6 +60,7 @@ function findList(node){
   var xpath = nodeToXPath(node);
   console.log(xpath);
   var possibleLists = [];
+  var xpathList = [];
   for (var i = 0; i<xpath.length; i++){
     var char = xpath[i];
     if (isNumber(char)) {
@@ -68,15 +69,90 @@ function findList(node){
 	j += 1;
       }
       // + and - 1 below to get rid of the brackets
-      var listNodes = findItems(xpath.slice(0,i-1),xpath.slice(j+1,xpath.length));
+      var prefix = xpath.slice(0,i-1);
+      var suffix = xpath.slice(j+1,xpath.length);
+      var slashIndex = prefix.lastIndexOf("/")
+      var nodeName = prefix.slice(slashIndex+1,prefix.length);
+      var index = xpath.slice(i,j);
+      var listNodes = findItems(prefix,suffix);
       if (listNodes){
+	xpathList.push({"nodeName": nodeName, "index": index, "iterable": true});
 	var listTexts = _.map(listNodes,function(a){return $(a).text();});
 	possibleLists.push(listTexts);
       }
+      else{
+	xpathList.push({"nodeName": nodeName, "index": index, "iterable": false});
+      }
     }
   }
+  
+  //the list that can iterate over multiple parts of the xpath
+  //captures, for instance, all items in all menus instead of 
+  //2nd in each menu or all in one menu
+  //or both vertically and horizontally in a table, as Google sub-results
+  var listNodes = findItemsUsefulIterations(xpathList);
+  if (listNodes){
+    var listTexts = _.map(listNodes,function(a){return $(a).text();});
+    possibleLists.push(listTexts);
+  }
+  
   console.log(possibleLists);
   return possibleLists;
+}
+
+function findItemsUsefulIterations(xpathList){
+  console.log(xpathList);
+  return findItemsUsefulIterationsRecurse("HTML", xpathList);
+}
+
+function findItemsUsefulIterationsRecurse(prefix,suffixList){
+  for (var i = 0; i<suffixList.length; i++){
+    suffixItem = suffixList[i];
+    if (suffixItem["iterable"]){
+      //processing
+      var truncatedSuffixList = suffixList.slice(i+1,suffixList.length);
+      console.log(prefix);
+      var nodes = xPathToNodes(prefix);
+      console.log(nodes);
+      var node = nodes[0];
+      if (!node){
+	//sometimes even though the original sibling has a given child,
+	//this one might not
+	//example, 5 menus, one of which doesn't have any items
+	//the other menus may all have ul child
+	//the empty one does not.  should just skip
+	//can't descend this branch of the tree since node doesn't exist
+	return [];
+      }
+      var targetName = suffixItem["nodeName"].toLowerCase();
+      var children = node.childNodes;
+      var count = 0;
+      var foundNodes = [];
+      for (var i = 0; i<children.length; i++){
+	var child = children[i];
+	var name = child.nodeName;
+	if (targetName === name.toLowerCase()){
+	  count += 1;
+	  var newFoundNodes = findItemsUsefulIterationsRecurse(prefix+"/"+targetName+"["+count+"]",truncatedSuffixList);
+	  foundNodes = foundNodes.concat(newFoundNodes);
+	}
+      }
+      return foundNodes;
+    }
+    else{
+      prefix = prefix+"/"+suffixItem["nodeName"]+"["+suffixItem["index"]+"]";
+    }
+  }
+  
+  //if we made it through the for loop, there must not have been any
+  //new recursion points, so we're at the end of the xpath
+  //go ahead and get this xpath's node
+  var newListNodes = xPathToNodes(prefix);
+  var newListNode = newListNodes[0];
+  if (newListNode){
+    return[newListNode];
+  }
+  return [];
 }
 
 function findItems(prefix,suffix){
@@ -182,7 +258,7 @@ function xPathToNodes(xpath) {
     }
     return results;
   } catch (e) {
-    getLog('misc').error('xPath throws error when evaluated', xpath);
+    console.log('xPath throws error when evaluated', xpath);
   }
   return [];
 }
