@@ -3,13 +3,21 @@ var currentlyOn = false;
 function setUp(){
   console.log("Setting up.");
   
-  document.addEventListener('click', findLists, false);
+  document.addEventListener('click', findListsWithEvent, false);
 
   chrome.extension.onRequest.addListener(function(msg, sender) {
     console.log(msg);
     if (msg.from && (msg.from === "background")
             && msg.subject && (msg.subject = "currentlyOn")) {
         currentlyOn = msg.currentlyOn;
+    }
+  });
+  
+  chrome.extension.onMessage.addListener(function(msg, sender) {
+    console.log(msg);
+    if (msg.from && (msg.from === "mainpanel")
+            && msg.subject && (msg.subject = "processText")) {
+        findLists(msg.text);
     }
   });
   
@@ -21,16 +29,20 @@ function setUp(){
 
 $(setUp);
 
-
-function findLists(event){
+function findListsWithEvent(event){
   if (!currentlyOn){
     return;
   }
+  
   event.stopPropagation();
   event.preventDefault();
   var $target = $(event.target);
   var text = $target.text();
-  
+  findLists(text);
+}
+
+function findLists(text){
+
   //must pretend we didn't get this text from a click, but may have
   //observed it elsewhere (user spreadsheet, copied or typed in)
   //having only the text, try to guess the node

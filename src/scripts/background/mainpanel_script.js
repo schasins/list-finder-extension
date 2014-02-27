@@ -10,20 +10,21 @@ function setUp(){
         showLists(msg.lists);
     }
   });
+  document.forms["text"].addEventListener('submit', processForm, false);
 }
 
 $(setUp);
 
 function showLists(lists){
-  var $body = $("body");
+  var $tabsDiv = $("#tabs");
   //clear out content from past clicks
-  $body.empty();
+  $tabsDiv.empty();
   
   
   var $div = $("<div></div>");
   var $ul = $("<ul></ul>");
   
-  $body.append($div);
+  $tabsDiv.append($div);
   $div.append($ul);
   
   for (var i = 0; i<lists.length; i++){
@@ -41,4 +42,16 @@ function showLists(lists){
     $div.append(newList);
   }
   $div.tabs();
+}
+
+function processForm(){
+  var text = document.forms["text"]["text"].value;
+  chrome.tabs.query({active: true, 'windowType': "normal"}, function(tabs){
+    for (i in tabs){
+      tab = tabs[i];
+      chrome.tabs.sendMessage(tab.id, {from: "mainpanel", subject: "processText", text: text}, function(response) {}); 
+    }
+  });
+  event.returnValue=false;
+  return false;
 }
