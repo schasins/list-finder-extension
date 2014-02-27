@@ -63,17 +63,17 @@ function findList(node){
   var xpathList = [];
   for (var i = 0; i<xpath.length; i++){
     var char = xpath[i];
-    if (isNumber(char)) {
-      var j = i + 1; // xpath.slice(i,j) is just char i
-      while (isNumber(xpath.slice(i,j+1))) {
-	j += 1;
+    if (char == "[") {
+      var start = i;
+      var end = start + 1;
+      while (xpath[end] != "]") {
+	end += 1;
       }
-      // + and - 1 below to get rid of the brackets
-      var prefix = xpath.slice(0,i-1);
-      var suffix = xpath.slice(j+1,xpath.length);
+      var prefix = xpath.slice(0,start); //don't include brackets
+      var suffix = xpath.slice(end+1,xpath.length); //don't include brackets
       var slashIndex = prefix.lastIndexOf("/")
       var nodeName = prefix.slice(slashIndex+1,prefix.length);
-      var index = xpath.slice(i,j);
+      var index = xpath.slice(start+1,end);
       var listNodes = findItems(prefix,suffix);
       if (listNodes){
 	xpathList.push({"nodeName": nodeName, "index": index, "iterable": true});
@@ -102,7 +102,7 @@ function findList(node){
 
 function findItemsUsefulIterations(xpathList){
   console.log(xpathList);
-  var listNodes = findItemsUsefulIterationsRecurse("HTML", xpathList);
+  var listNodes = findItemsUsefulIterationsRecurse("HTML", xpathList); //TODO: change this to reflect page case?
   if (listNodes.length > 1){
     console.log(listNodes);
     for (var i = 0; i<listNodes.length; i++){
