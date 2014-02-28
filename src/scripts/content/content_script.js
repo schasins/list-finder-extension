@@ -1,4 +1,5 @@
 var currentlyOn = false;
+var lists = null;
 
 function setUp(){
   document.addEventListener('click', findListsWithEvent, false);
@@ -61,12 +62,23 @@ function findLists(text){
       }
     }
   }
+  
+  //global
+  lists = possibleLists;
+  
+  var possibleListTexts = [];
+  for (var i in possibleLists){
+    var possibleList = possibleLists[i];
+    var listTexts = _.map(possibleList,function(a){return $(a).text();});
+    possibleListTexts.push(listTexts);
+  }
+  
   console.log("final possibleLists");
   console.log(possibleLists);
   chrome.runtime.sendMessage({
     from: "content",
     subject: "lists",
-    lists: possibleLists
+    lists: possibleListTexts
   });
 }
 
@@ -91,8 +103,7 @@ function findList(node){
       var listNodes = findItems(prefix,suffix);
       if (listNodes){
 	xpathList.push({"nodeName": nodeName, "index": index, "iterable": true});
-	var listTexts = _.map(listNodes,function(a){return $(a).text();});
-	possibleLists.push(listTexts);
+	possibleLists.push(listNodes);
       }
       else{
 	xpathList.push({"nodeName": nodeName, "index": index, "iterable": false});
@@ -105,11 +116,7 @@ function findList(node){
   //2nd in each menu or all in one menu
   //or both vertically and horizontally in a table, as Google sub-results
   var newLists = findItemsUsefulIterations(xpathList);
-  for (var i in newLists){
-    var list = newLists[i];
-    var listTexts = _.map(list,function(a){return $(a).text();});
-    possibleLists.push(listTexts);
-  }
+  possibleLists = possibleLists.concat(newLists);
   
   console.log("possibleLists");
   console.log(possibleLists);
@@ -145,10 +152,6 @@ function findItemsUsefulIterations(xpathList){
     var listNodes = findItemsUsefulIterationsRecurse("HTML", xpathList); //TODO: change this to reflect page case?
     if (listNodes.length > 1){
       nodeLists.push(listNodes);
-      for (var i = 0; i<listNodes.length; i++){
-	var listNode = listNodes[i];
-	$(listNode).css('background-color', 'blue');
-      }
     }
   }
   console.log("nodeLists");
@@ -233,11 +236,6 @@ function findItems(prefix,suffix){
     }
   }
   if (listNodes.length > 1){
-    //console.log(listNodes);
-    for (var i = 0; i<listNodes.length; i++){
-      var listNode = listNodes[i];
-      $(listNode).css('background-color', 'blue');
-    }
     return listNodes;
   }
 }
@@ -273,7 +271,8 @@ function arrayNotInArrayOfArrays(array,listOfArrays){
     }
     var matched = true;
     for (var j = 0; j<currArray.length; j++){
-      if (array[j] != currArray[j]){
+      //TODO: figure out whether $ is expensive, maybe move elsewhere
+      if ($(array[j]).text() != $(currArray[j]).text()){ 
 	matched = false;
 	break;
       }
