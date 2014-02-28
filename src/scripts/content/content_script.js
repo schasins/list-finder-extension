@@ -1,8 +1,6 @@
 var currentlyOn = false;
 
 function setUp(){
-  console.log("Setting up.");
-  
   document.addEventListener('click', findListsWithEvent, false);
 
   chrome.extension.onRequest.addListener(function(msg, sender) {
@@ -51,6 +49,8 @@ function findLists(text){
   matchedNodes.css('background-color', 'red');
   var possibleLists = [];
   for (var i = 0; i<matchedNodes.length; i++){
+    console.log("Matched node: ");
+    console.log(matchedNodes[i]);
     var newLists = findList(matchedNodes[i]);
     //keep in mind that we may have both div and a div's a or something
     //so we may get different matchedNodes turning up same lists.  check
@@ -61,6 +61,8 @@ function findLists(text){
       }
     }
   }
+  console.log("final possibleLists");
+  console.log(possibleLists);
   chrome.runtime.sendMessage({
     from: "content",
     subject: "lists",
@@ -102,27 +104,56 @@ function findList(node){
   //captures, for instance, all items in all menus instead of 
   //2nd in each menu or all in one menu
   //or both vertically and horizontally in a table, as Google sub-results
-  var listNodes = findItemsUsefulIterations(xpathList);
-  if (listNodes){
-    var listTexts = _.map(listNodes,function(a){return $(a).text();});
+  var newLists = findItemsUsefulIterations(xpathList);
+  for (var i in newLists){
+    var list = newLists[i];
+    var listTexts = _.map(list,function(a){return $(a).text();});
     possibleLists.push(listTexts);
   }
   
+  console.log("possibleLists");
   console.log(possibleLists);
   return possibleLists;
 }
 
 function findItemsUsefulIterations(xpathList){
-  console.log(xpathList);
-  var listNodes = findItemsUsefulIterationsRecurse("HTML", xpathList); //TODO: change this to reflect page case?
-  if (listNodes.length > 1){
-    console.log(listNodes);
-    for (var i = 0; i<listNodes.length; i++){
-      var listNode = listNodes[i];
-      $(listNode).css('background-color', 'blue');
+  //console.log(xpathList);
+  var indexes = [];
+  for (var i in xpathList){
+    var item = xpathList[i];
+    if (item["iterable"]){
+      indexes.push(i);
     }
-    return listNodes;
   }
+  
+  var subsets = combine(indexes,2);
+  console.log(subsets);
+  
+  var nodeLists = [];
+  for (var i in subsets){
+    var subset = subsets[i];
+    for (var j in indexes){
+      var index = indexes[j];
+      var item = xpathList[index];
+      if (subset.indexOf(index) > -1){ //if subset contains index
+	item["iterable"] = true;
+      }
+      else{
+	item["iterable"] = false;
+      }
+    }
+    var listNodes = findItemsUsefulIterationsRecurse("HTML", xpathList); //TODO: change this to reflect page case?
+    if (listNodes.length > 1){
+      nodeLists.push(listNodes);
+      for (var i = 0; i<listNodes.length; i++){
+	var listNode = listNodes[i];
+	$(listNode).css('background-color', 'blue');
+      }
+    }
+  }
+  console.log("nodeLists");
+  console.log(nodeLists);
+  return nodeLists;
 }
 
 function findItemsUsefulIterationsRecurse(prefix,suffixList){
@@ -131,9 +162,9 @@ function findItemsUsefulIterationsRecurse(prefix,suffixList){
     if (suffixItem["iterable"]){
       //processing
       var truncatedSuffixList = suffixList.slice(i+1,suffixList.length);
-      console.log(prefix);
+      //console.log(prefix);
       var nodes = xPathToNodes(prefix);
-      console.log(nodes);
+      //console.log(nodes);
       var node = nodes[0];
       if (!node){
 	//sometimes even though the original sibling has a given child,
@@ -176,8 +207,8 @@ function findItemsUsefulIterationsRecurse(prefix,suffixList){
 }
 
 function findItems(prefix,suffix){
-  console.log("******************************");
-  console.log(prefix+"[*]"+suffix);
+  //console.log("******************************");
+  //console.log(prefix+"[*]"+suffix);
   var slashIndex = prefix.lastIndexOf("/")
   var parentXpath = prefix.slice(0,slashIndex);
   var nodes = xPathToNodes(parentXpath);
@@ -187,7 +218,7 @@ function findItems(prefix,suffix){
   var targetName = prefix.slice(slashIndex+1,prefix.length).toLowerCase();
   var listNodes = [];
   var children = node.childNodes;
-  console.log(children);
+  //console.log(children);
   var count = 0;
   for (var i = 0; i<children.length; i++){
     var child = children[i];
@@ -202,7 +233,7 @@ function findItems(prefix,suffix){
     }
   }
   if (listNodes.length > 1){
-    console.log(listNodes);
+    //console.log(listNodes);
     for (var i = 0; i<listNodes.length; i++){
       var listNode = listNodes[i];
       $(listNode).css('background-color', 'blue');
@@ -212,6 +243,27 @@ function findItems(prefix,suffix){
 }
 
 /*** HELPER FUNCTIONS ***/
+
+var combine = function(a, min) {
+    var fn = function(n, src, got, all) {
+        if (n == 0) {
+            if (got.length > 0) {
+                all[all.length] = got;
+            }
+            return;
+        }
+        for (var j = 0; j < src.length; j++) {
+            fn(n - 1, src.slice(j + 1), got.concat([src[j]]), all);
+        }
+        return;
+    }
+    var all = [];
+    for (var i = min; i < a.length; i++) {
+        fn(i, a, [], all);
+    }
+    all.push(a);
+    return all;
+}
 
 function arrayNotInArrayOfArrays(array,listOfArrays){
   for (var i = 0; i< listOfArrays.length; i++){
