@@ -1,5 +1,8 @@
 var currentlyOn = false;
-var lists = null;
+
+//a list of lists of node lists
+//each item is a list of node lists with the same text equivalent
+var nodeLists = null;
 
 function setUp(){
   document.addEventListener('click', findListsWithEvent, false);
@@ -16,12 +19,10 @@ function setUp(){
     console.log(msg);
     if (msg.from && (msg.from === "mainpanel")
             && msg.subject && (msg.subject === "processText")) {
-	console.log("Finding lists.");
         findLists(msg.text);
     }
     else if (msg.from && (msg.from === "mainpanel")
             && msg.subject && (msg.subject === "listsIndex")) {
-	console.log("Highlighting new list.");
         showList(msg.index);
     }
   });
@@ -63,44 +64,50 @@ function findLists(text){
     //so we may get different matchedNodes turning up same lists.  check
     for (var j = 0; j<newLists.length; j++){
       var newList = newLists[j];
-      if (arrayNotInArrayOfArrays(newList,possibleLists)){
-	possibleLists.push(newList);
-      }
+      possibleLists.push(newList);
     }
   }
   
-  //global so that if we get messages from mainpanel, can highlight the relevant list
-  lists = possibleLists;
-  //for now highlight the first list
-  if (possibleLists.length > 0){
-    highlight(possibleLists[0]);
-  }
-  
-  var possibleListTexts = [];
+  //global nodeLists so that if we get messages from mainpanel, can highlight the relevant list
+  nodeLists = [];
+  textLists = [];
   for (var i in possibleLists){
     var possibleList = possibleLists[i];
-    var listTexts = _.map(possibleList,function(a){return $(a).text();});
-    possibleListTexts.push(listTexts);
+    var textList = _.map(possibleList,function(a){return $(a).text();});
+    var index = indexOfArrayInArrayOfArrays(textList, textLists);
+    if (index == -1){
+      textLists.push(textList);
+      nodeLists.push([possibleList]);
+    }
+    else{
+      nodeLists[index].push(possibleList);
+    }
   }
   
-  console.log("final possibleLists");
-  console.log(possibleLists);
+  //for now highlight the first text list's node lists
+  if (nodeLists.length > 0){
+    highlight(nodeLists[0]);
+  }
+  
+  //console.log("final nodeLists");
+  //console.log(nodeLists);
   chrome.runtime.sendMessage({
     from: "content",
     subject: "lists",
-    lists: possibleListTexts
+    lists: textLists
   });
 }
 
 function showList(index){
-  console.log(index);
-  var list = lists[index];
-  console.log(list);
-  highlight(list);
+  var lists = nodeLists[index];
+  highlight(lists);
 }
 
-function highlight(nodeList){
-  $(nodeList).css('background-color', 'blue');
+function highlight(nodeLists){
+  for (var i in nodeLists){
+    var nodeList = nodeLists[i];
+    $(nodeList).css('background-color', 'blue');
+  }
 }
 
 function findList(node){
@@ -284,25 +291,24 @@ var combine = function(a, min) {
     return all;
 }
 
-function arrayNotInArrayOfArrays(array,listOfArrays){
-  for (var i = 0; i< listOfArrays.length; i++){
-    var currArray = listOfArrays[i];
+function indexOfArrayInArrayOfArrays(array,arrayOfArrays){
+  for (var i = 0; i< arrayOfArrays.length; i++){
+    var currArray = arrayOfArrays[i];
     if (currArray.length != array.length){
       continue;
     }
     var matched = true;
     for (var j = 0; j<currArray.length; j++){
-      //TODO: figure out whether $ is expensive, maybe move elsewhere
-      if ($(array[j]).text() != $(currArray[j]).text()){ 
+      if (array[j] != currArray[j]){ 
 	matched = false;
 	break;
       }
     }
     if (matched){
-      return false;
+      return i;
     }
   }
-  return true;
+  return -1;
 }
 
 function isNumber(n) {
