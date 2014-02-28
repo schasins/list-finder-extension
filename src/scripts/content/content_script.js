@@ -7,7 +7,7 @@ function setUp(){
   chrome.extension.onRequest.addListener(function(msg, sender) {
     console.log(msg);
     if (msg.from && (msg.from === "background")
-            && msg.subject && (msg.subject = "currentlyOn")) {
+            && msg.subject && (msg.subject === "currentlyOn")) {
         currentlyOn = msg.currentlyOn;
     }
   });
@@ -15,8 +15,14 @@ function setUp(){
   chrome.extension.onMessage.addListener(function(msg, sender) {
     console.log(msg);
     if (msg.from && (msg.from === "mainpanel")
-            && msg.subject && (msg.subject = "processText")) {
+            && msg.subject && (msg.subject === "processText")) {
+	console.log("Finding lists.");
         findLists(msg.text);
+    }
+    else if (msg.from && (msg.from === "mainpanel")
+            && msg.subject && (msg.subject === "listsIndex")) {
+	console.log("Highlighting new list.");
+        showList(msg.index);
     }
   });
   
@@ -86,12 +92,15 @@ function findLists(text){
   });
 }
 
+function showList(index){
+  console.log(index);
+  var list = lists[index];
+  console.log(list);
+  highlight(list);
+}
+
 function highlight(nodeList){
   $(nodeList).css('background-color', 'blue');
-  //for (var i in nodeList){
-  //  var node = nodeList[i];
-  //  node.css('background-color', 'blue');
-  //}
 }
 
 function findList(node){

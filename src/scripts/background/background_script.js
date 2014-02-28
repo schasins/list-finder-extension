@@ -40,7 +40,7 @@ var currentlyOn = false;
   chrome.runtime.onMessage.addListener(function(msg, sender) {
     console.log(msg);
     if (msg.from && (msg.from === "content")
-            && msg.subject && (msg.subject = "currentlyOnRequest")) {
+            && msg.subject && (msg.subject === "currentlyOnRequest")) {
         sendCurrentlyOn();
     }
   });

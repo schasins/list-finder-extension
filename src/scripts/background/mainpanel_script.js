@@ -5,7 +5,7 @@ function setUp(){
     console.log(msg);
     console.log(sender);
     if (msg.from && (msg.from === "content")
-            && msg.subject && (msg.subject = "lists")) {
+            && msg.subject && (msg.subject === "lists")) {
         /* Enable the page-action for the requesting tab */
         showLists(msg.lists);
     }
@@ -29,7 +29,7 @@ function showLists(lists){
   
   for (var i = 0; i<lists.length; i++){
     var list = lists[i];
-    var newLI = $("<li><a href='#fragment-"+i+"'>List "+i+"</a></li>"); 
+    var newLI = $("<li><a href='#fragment-"+i+"' data-type='listSelector' data-index='"+i+"'>List "+i+"</a></li>"); 
     console.log(newLI);
     $ul.append(newLI);
     var contentString = ""
@@ -42,6 +42,23 @@ function showLists(lists){
     $div.append(newList);
   }
   $div.tabs();
+  setUpListeners();
+}
+
+function setUpListeners(){
+  $as = $('[data-type="listSelector"]');
+  $as.click(sendListMessage);
+}
+
+function sendListMessage(event){
+  var target = event.target;
+  var index = $(target).data("index");
+  chrome.tabs.query({active: true, 'windowType': "normal"}, function(tabs){
+    for (i in tabs){
+      tab = tabs[i];
+      chrome.tabs.sendMessage(tab.id, {from: "mainpanel", subject: "listsIndex", index: index}, function(response) {}); 
+    }
+  });
 }
 
 function processForm(){
