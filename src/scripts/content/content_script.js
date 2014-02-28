@@ -3,6 +3,7 @@ var currentlyOn = false;
 //a list of lists of node lists
 //each item is a list of node lists with the same text equivalent
 var nodeLists = null;
+var currHighlightedIndex = 0;
 
 function setUp(){
   document.addEventListener('click', findListsWithEvent, false);
@@ -23,7 +24,7 @@ function setUp(){
     }
     else if (msg.from && (msg.from === "mainpanel")
             && msg.subject && (msg.subject === "listsIndex")) {
-        showList(msg.index);
+        highlightIndex(msg.index);
     }
   });
   
@@ -86,7 +87,7 @@ function findLists(text){
   
   //for now highlight the first text list's node lists
   if (nodeLists.length > 0){
-    highlight(nodeLists[0]);
+    highlightIndex(0);
   }
   
   //console.log("final nodeLists");
@@ -98,15 +99,20 @@ function findLists(text){
   });
 }
 
-function showList(index){
-  var lists = nodeLists[index];
-  highlight(lists);
+function highlightIndex(index){
+  console.log("making currhighlightedindex transparent");
+  console.log(currHighlightedIndex);
+  highlight(nodeLists[currHighlightedIndex],"initial");
+  console.log("making new index blue");
+  console.log(index);
+  highlight(nodeLists[index],"blue");
+  currHighlightedIndex = index;
 }
 
-function highlight(nodeLists){
+function highlight(nodeLists,color){
   for (var i in nodeLists){
     var nodeList = nodeLists[i];
-    $(nodeList).css('background-color', 'blue');
+    $(nodeList).css('background-color', color);
   }
 }
 
