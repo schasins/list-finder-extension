@@ -47,7 +47,7 @@ function findLists(text){
   //having only the text, try to guess the node
   
   var matchedNodes = $('*').filter(function(){ return $(this).text() === text;});
-  matchedNodes.css('background-color', 'red');
+  matchedNodes.css('outline', 'solid red');
   var possibleLists = [];
   for (var i = 0; i<matchedNodes.length; i++){
     console.log("Matched node: ");
@@ -63,8 +63,12 @@ function findLists(text){
     }
   }
   
-  //global
+  //global so that if we get messages from mainpanel, can highlight the relevant list
   lists = possibleLists;
+  //for now highlight the first list
+  if (possibleLists.length > 0){
+    highlight(possibleLists[0]);
+  }
   
   var possibleListTexts = [];
   for (var i in possibleLists){
@@ -80,6 +84,14 @@ function findLists(text){
     subject: "lists",
     lists: possibleListTexts
   });
+}
+
+function highlight(nodeList){
+  $(nodeList).css('background-color', 'blue');
+  //for (var i in nodeList){
+  //  var node = nodeList[i];
+  //  node.css('background-color', 'blue');
+  //}
 }
 
 function findList(node){
