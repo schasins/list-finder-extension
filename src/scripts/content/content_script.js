@@ -6,7 +6,7 @@ var nodeLists = null;
 var currHighlightedIndex = 0;
 
 function setUp(){
-  document.addEventListener('click', findListsWithEvent, false);
+  document.addEventListener('click', findListsWithEvent, true);
   
   utilities.listenForMessage("background", "content", "currentlyOn", function(msg_co){currentlyOn = msg_co;});
   utilities.listenForMessage("mainpanel", "content", "processText", findLists);
