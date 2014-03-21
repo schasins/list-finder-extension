@@ -1,15 +1,5 @@
 function setUp(){
-  console.log("Setting up.");
-  chrome.runtime.onMessage.addListener(function(msg, sender) {
-    /* First, validate the message's structure */
-    console.log(msg);
-    console.log(sender);
-    if (msg.from && (msg.from === "content")
-            && msg.subject && (msg.subject === "lists")) {
-        /* Enable the page-action for the requesting tab */
-        showLists(msg.lists);
-    }
-  });
+  utilities.listenForMessage("content", "mainpanel", "lists", showLists);
   document.forms["text"].addEventListener('submit', processForm, false);
 }
 
@@ -53,22 +43,12 @@ function setUpListeners(){
 function sendListMessage(event){
   var target = event.target;
   var index = $(target).data("index");
-  chrome.tabs.query({active: true, 'windowType': "normal"}, function(tabs){
-    for (i in tabs){
-      tab = tabs[i];
-      chrome.tabs.sendMessage(tab.id, {from: "mainpanel", subject: "listsIndex", index: index}, function(response) {}); 
-    }
-  });
+  utilities.sendMessage ("mainpanel", "content", "listsIndex", index);
 }
 
 function processForm(){
   var text = document.forms["text"]["text"].value;
-  chrome.tabs.query({active: true, 'windowType': "normal"}, function(tabs){
-    for (i in tabs){
-      tab = tabs[i];
-      chrome.tabs.sendMessage(tab.id, {from: "mainpanel", subject: "processText", text: text}, function(response) {}); 
-    }
-  });
+  utilities.sendMessage ("mainpanel", "content", "processText", text);
   event.returnValue=false;
   return false;
 }

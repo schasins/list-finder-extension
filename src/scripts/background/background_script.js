@@ -28,22 +28,7 @@ var currentlyOn = false;
     }
     currentlyOn = !currentlyOn;
     console.log("currently on: "+currentlyOn);
-    sendCurrentlyOn();
-  });
-  
-  function sendCurrentlyOn(){
-    console.log("Sending currently on: "+currentlyOn);
-    chrome.tabs.getSelected(null, function(tab) {
-      chrome.tabs.sendRequest(tab.id, {from: 'background', subject: 'currentlyOn', currentlyOn: currentlyOn});
-    });
-  }
-  
-  chrome.runtime.onMessage.addListener(function(msg, sender) {
-    console.log(msg);
-    if (msg.from && (msg.from === "content")
-            && msg.subject && (msg.subject === "requestCurrentlyOn")) {
-        sendCurrentlyOn();
-    }
+    utilities.sendMessage("background", "content","currentlyOn", currentlyOn);
   });
 
   chrome.windows.onRemoved.addListener(function(winId) {
@@ -54,6 +39,7 @@ var currentlyOn = false;
 
   //openMainPanel();
   
+  utilities.listenForMessage("content", "background", "requestCurrentlyOn",function(){utilities.sendMessage("background","content","currentlyOn", currentlyOn);});
   
 })();
 

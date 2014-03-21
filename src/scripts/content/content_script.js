@@ -7,37 +7,20 @@ var currHighlightedIndex = 0;
 
 function setUp(){
   document.addEventListener('click', findListsWithEvent, false);
+  
+  utilities.listenForMessage("background", "content", "currentlyOn", function(msg_co){currentlyOn = msg_co;});
+  utilities.listenForMessage("mainpanel", "content", "processText", findLists);
+  utilities.listenForMessage("mainpanel", "content", "listsIndex", highlightIndex);
 
-  chrome.extension.onRequest.addListener(function(msg, sender) {
-    console.log(msg);
-    if (msg.from && (msg.from === "background")
-            && msg.subject && (msg.subject === "currentlyOn")) {
-        currentlyOn = msg.currentlyOn;
-    }
-  });
-  
-  chrome.extension.onMessage.addListener(function(msg, sender) {
-    console.log(msg);
-    if (msg.from && (msg.from === "mainpanel")
-            && msg.subject && (msg.subject === "processText")) {
-        findLists(msg.text);
-    }
-    else if (msg.from && (msg.from === "mainpanel")
-            && msg.subject && (msg.subject === "listsIndex")) {
-        highlightIndex(msg.index);
-    }
-  });
-  
-  chrome.runtime.sendMessage({
-	from: "content",
-	subject: "requestCurrentlyOn"
-  });
+  utilities.sendMessage("content", "background", "requestCurrentlyOn", "");
 }
 
 $(setUp);
 
 function findListsWithEvent(event){
+  console.log("in findListsWithEvent");
   if (!currentlyOn){
+    console.log("returning: "+currentlyOn);
     return;
   }
   
@@ -92,19 +75,12 @@ function findLists(text){
   
   //console.log("final nodeLists");
   //console.log(nodeLists);
-  chrome.runtime.sendMessage({
-    from: "content",
-    subject: "lists",
-    lists: textLists
-  });
+  
+  utilities.sendMessage("content", "mainpanel", "lists", textLists);
 }
 
 function highlightIndex(index){
-  console.log("making currhighlightedindex transparent");
-  console.log(currHighlightedIndex);
   highlight(nodeLists[currHighlightedIndex],"initial");
-  console.log("making new index blue");
-  console.log(index);
   highlight(nodeLists[index],"blue");
   currHighlightedIndex = index;
 }
@@ -127,7 +103,7 @@ function findList(node){
       var start = i;
       var end = start + 1;
       while (xpath[end] != "]") {
-	end += 1;
+        end += 1;
       }
       var prefix = xpath.slice(0,start); //don't include brackets
       var suffix = xpath.slice(end+1,xpath.length); //don't include brackets
@@ -136,11 +112,11 @@ function findList(node){
       var index = xpath.slice(start+1,end);
       var listNodes = findItems(prefix,suffix);
       if (listNodes){
-	xpathList.push({"nodeName": nodeName, "index": index, "iterable": true});
-	possibleLists.push(listNodes);
+        xpathList.push({"nodeName": nodeName, "index": index, "iterable": true});
+        possibleLists.push(listNodes);
       }
       else{
-	xpathList.push({"nodeName": nodeName, "index": index, "iterable": false});
+        xpathList.push({"nodeName": nodeName, "index": index, "iterable": false});
       }
     }
   }
@@ -152,9 +128,21 @@ function findList(node){
   var newLists = findItemsUsefulIterations(xpathList);
   possibleLists = possibleLists.concat(newLists);
   
+  //all the above nodes were retrieved based on having similar xpaths
+  //now let's use other attributes
+  //font size, color, x coord, y coord, font family.  what else?
+  var newLists = findItemsAlternativeFeatures(possibleLists);
+  possibleLists = possibleLists.concat(newLists);
+  
   console.log("possibleLists");
   console.log(possibleLists);
   return possibleLists;
+}
+
+function findItemsAlternativeFeatures(priorLists){
+  for (var i in priorLists){
+    var list = priorLists[i];
+  }
 }
 
 function findItemsUsefulIterations(xpathList){
@@ -204,26 +192,26 @@ function findItemsUsefulIterationsRecurse(prefix,suffixList){
       //console.log(nodes);
       var node = nodes[0];
       if (!node){
-	//sometimes even though the original sibling has a given child,
-	//this one might not
-	//example, 5 menus, one of which doesn't have any items
-	//the other menus may all have ul child
-	//the empty one does not.  should just skip
-	//can't descend this branch of the tree since node doesn't exist
-	return [];
+        //sometimes even though the original sibling has a given child,
+        //this one might not
+        //example, 5 menus, one of which doesn't have any items
+        //the other menus may all have ul child
+        //the empty one does not.  should just skip
+        //can't descend this branch of the tree since node doesn't exist
+        return [];
       }
       var targetName = suffixItem["nodeName"].toLowerCase();
       var children = node.childNodes;
       var count = 0;
       var foundNodes = [];
       for (var i = 0; i<children.length; i++){
-	var child = children[i];
-	var name = child.nodeName;
-	if (targetName === name.toLowerCase()){
-	  count += 1;
-	  var newFoundNodes = findItemsUsefulIterationsRecurse(prefix+"/"+targetName+"["+count+"]",truncatedSuffixList);
-	  foundNodes = foundNodes.concat(newFoundNodes);
-	}
+        var child = children[i];
+        var name = child.nodeName;
+        if (targetName === name.toLowerCase()){
+          count += 1;
+          var newFoundNodes = findItemsUsefulIterationsRecurse(prefix+"/"+targetName+"["+count+"]",truncatedSuffixList);
+          foundNodes = foundNodes.concat(newFoundNodes);
+        }
       }
       return foundNodes;
     }
@@ -265,7 +253,7 @@ function findItems(prefix,suffix){
       var newListNodes = xPathToNodes(prefix+"["+count+"]"+suffix);
       var newListNode = newListNodes[0];
       if (newListNode){
-	listNodes.push(newListNode);
+        listNodes.push(newListNode);
       }
     }
   }
