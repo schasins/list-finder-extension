@@ -23,6 +23,7 @@ utilities.listenForMessage = function(from, to, subject,fn){
 }
 
 utilities.sendMessage = function(from, to, subject, content){
+  console.log("Sending message: ");
   if ((from ==="background" || from ==="mainpanel") && to === "content"){
 	var msg = {from: from, subject: subject, content: content};
 	console.log(msg);

@@ -128,6 +128,9 @@ function findList(node){
   var newLists = findItemsUsefulIterations(xpathList);
   possibleLists = possibleLists.concat(newLists);
   
+  console.log("possibleLists");
+  console.log(possibleLists);
+  
   //all the above nodes were retrieved based on having similar xpaths
   //now let's use other attributes
   //font size, color, x coord, y coord, font family.  what else?
@@ -143,6 +146,7 @@ function findItemsAlternativeFeatures(priorLists){
   for (var i in priorLists){
     var list = priorLists[i];
   }
+  return [];
 }
 
 function findItemsUsefulIterations(xpathList){

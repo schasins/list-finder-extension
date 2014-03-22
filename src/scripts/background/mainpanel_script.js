@@ -20,15 +20,12 @@ function showLists(lists){
   for (var i = 0; i<lists.length; i++){
     var list = lists[i];
     var newLI = $("<li><a href='#fragment-"+i+"' data-type='listSelector' data-index='"+i+"'>List "+i+"</a></li>"); 
-    console.log(newLI);
     $ul.append(newLI);
     var contentString = ""
     for (var j = 0; j<list.length; j++){
       contentString+="<div>"+list[j]+"</div>";
     }
-    console.log(contentString);
     var newList = $("<div id='fragment-"+i+"'>"+contentString+"</div>");
-    console.log(newList); 
     $div.append(newList);
   }
   $div.tabs();
