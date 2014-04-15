@@ -134,7 +134,7 @@ function findList(node){
   //all the above nodes were retrieved based on having similar xpaths
   //now let's use other attributes
   //font size, color, x coord, y coord, font family.  what else?
-  var newLists = findItemsAlternativeFeatures(possibleLists);
+  var newLists = findItemsVisualFeatures(possibleLists);
   possibleLists = possibleLists.concat(newLists);
   
   console.log("possibleLists");
@@ -142,11 +142,99 @@ function findList(node){
   return possibleLists;
 }
 
-function findItemsAlternativeFeatures(priorLists){
+function findItemsVisualFeatures(priorLists){
+  var visual_lists = [];
   for (var i in priorLists){
     var list = priorLists[i];
+    visual_lists.concat(findItemsVisualFeaturesOneList(list));
   }
-  return [];
+  return visual_lists;
+}
+
+function findItemsVisualFeaturesOneList(list){
+  var visual_features = [];
+  for (var i = 0; i<list.length; i++){
+    var item = list[i];
+    var item_features = {
+      "original_list": list,
+      "top": getFeature(item, "top"), 
+      "right": getFeature(item, "right"), 
+      "bottom": getFeature(item, "bottom"), 
+      "left": getFeature(item, "left"), 
+      "height": getFeature(item, "height"),
+      "width": getFeature(item, "width"),
+      "font-size": getFeature(item, "font-size"),
+      "font-family": getFeature(item, "font-family"),
+      "font-style": getFeature(item, "font-style"),
+      "font-weight": getFeature(item, "font-weight"),
+      "background-color": getFeature(item, "background-color")};
+    visual_features.push(item_features);
+  }
+  
+  var new_lists = [];
+  
+  //font-family may be a good way to limit
+  filter_features = ["font-family"];
+  filter_features_to_use = {};
+  for (var i = 0; i< filter_features.length; i++){
+    var feature = filter_features[i];
+    ffs = _.map(visual_features, function(feature_list){return feature_list[feature];});
+    unique_ffs = _.uniq(ffs);
+    if (unique_ffs.length == 1){
+      filter_features_to_use[feature] = unique_ffs[0];
+    }
+  }
+  
+  single_feature_sufficient_features = ["top", "right", "bottom", "left"];
+  for (var i = 0; i< single_feature_sufficient_features.length ; i++){
+    var feature = single_feature_sufficient_features[i];
+    fs = _.map(visual_features, function(feature_list){return feature_list[feature];});
+    unique_fs = _.uniq(fs);
+    if (unique_fs.length <= 3){
+      new_lists.push(getElementsWith(feature,unique_fs, filter_features_to_use));
+    }
+  }
+  console.log("new_lists");
+  console.log(new_lists);
+  
+  return new_lists;
+}
+
+function getFeature(element, feature){
+  if (_.contains(["top", "right", "bottom", "left"],feature)){
+    var rect = element.getBoundingClientRect();
+    return rect[feature];
+  }
+  else{
+    var style = window.getComputedStyle(element, null);
+    return style.getPropertyValue(feature);
+  }
+}
+
+function getElementsWith(feature, feature_value_list, filter_features){
+  console.log(feature);
+  console.log(feature_value_list);
+  console.log(filter_features);
+  var nodes = document.getElementsByTagName("*");
+  var node_list = [];
+  for (i=0;i<nodes.length;i++){
+    var node = nodes[i];
+    var value = getFeature(node,feature);
+    if (_.contains(feature_value_list, value)){
+      var matched = true;
+      for (var feat in filter_features){
+        if (getFeature(node, feat) != filter_features[feat]){
+          matched = false;
+        }
+      }
+      if (matched){
+        node_list.push(node);
+      }
+    }
+  }
+  console.log("node_list");
+  console.log(node_list);
+  return node_list;
 }
 
 function findItemsUsefulIterations(xpathList){
