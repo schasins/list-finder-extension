@@ -18,7 +18,6 @@ function setUp(){
 $(setUp);
 
 function findListsWithEvent(event){
-  console.log("in findListsWithEvent");
   if (!currentlyOn){
     console.log("returning: "+currentlyOn);
     return;
@@ -41,8 +40,6 @@ function findLists(text){
   matchedNodes.css('outline', 'solid red');
   var possibleLists = [];
   for (var i = 0; i<matchedNodes.length; i++){
-    console.log("Matched node: ");
-    console.log(matchedNodes[i]);
     var newLists = findList(matchedNodes[i]);
     //keep in mind that we may have both div and a div's a or something
     //so we may get different matchedNodes turning up same lists.  check
@@ -73,8 +70,8 @@ function findLists(text){
     highlightIndex(0);
   }
   
-  //console.log("final nodeLists");
-  //console.log(nodeLists);
+  console.log("final nodeLists");
+  console.log(nodeLists);
   
   utilities.sendMessage("content", "mainpanel", "lists", textLists);
 }
@@ -94,7 +91,7 @@ function highlight(nodeLists,color){
 
 function findList(node){
   var xpath = nodeToXPath(node);
-  console.log(xpath);
+  //console.log(xpath);
   var possibleLists = [];
   var xpathList = [];
   for (var i = 0; i<xpath.length; i++){
@@ -128,18 +125,80 @@ function findList(node){
   var newLists = findItemsUsefulIterations(xpathList);
   possibleLists = possibleLists.concat(newLists);
   
-  console.log("possibleLists");
-  console.log(possibleLists);
-  
   //all the above nodes were retrieved based on having similar xpaths
   //now let's use other attributes
   //font size, color, x coord, y coord, font family.  what else?
   var newLists = findItemsVisualFeatures(possibleLists);
   possibleLists = possibleLists.concat(newLists);
   
+  newLists = findItemsClass(possibleLists);
+  possibleLists = possibleLists.concat(newLists);
+
   console.log("possibleLists");
   console.log(possibleLists);
   return possibleLists;
+}
+
+function findItemsClass(priorLists){
+  var class_lists = [];
+  for (var i in priorLists){
+    var list = priorLists[i];
+    class_lists = class_lists.concat(findItemsClassOneList(list));
+  }
+  console.log("class_lists");
+  console.log(class_lists);
+  return class_lists;
+}
+
+function findItemsClassOneList(list){
+  var class_lists = [];
+  for (var i = 0; i<list.length; i++){
+    var item = list[i];
+    var classes = item.className.match(/\S+/g);
+    if (classes === null){
+      classes = [];
+    }
+    class_lists.push(classes);
+  }
+  console.log("class_lists");
+  console.log(class_lists);
+  var shared_classes = _.intersection.apply(_,class_lists);
+  if (shared_classes.length < 1){
+    return;
+  }
+  console.log(shared_classes);
+  console.log(shared_classes === [null]);
+  var new_lists = getElementsWithClasses(shared_classes, list);
+  console.log("class --- new_lists");
+  console.log(new_lists);
+  return new_lists;
+}
+
+function getElementsWithClasses(classes, original_list){
+  var new_lists = [];
+  first_shared_parent = $(original_list[0]).parents().filter(
+    function() { 
+      var potential_parent = this;
+      return _.reduce(original_list.slice(1,original_list.length),
+        function(acc,elem){return (acc && $.contains(potential_parent, elem));},true);}).first();
+  var selector = "."+classes.join(".");
+  console.log(selector);
+  console.log(classes);
+  console.log($(selector));
+  console.log(first_shared_parent);
+  var new_list = first_shared_parent.find(selector);
+  new_lists.push(new_list);
+  var parents = first_shared_parent.parents();
+  var new_list_length = 0;
+  for (var i = 0; i<parents.length; i++){
+    var parent = $(parents[i]);
+      var new_list = parent.find(selector);
+      if (new_list.length > new_list_length){
+        new_lists.push(new_list);
+        new_list_length = new_list.length;
+      }
+  }
+  return new_lists;
 }
 
 function findItemsVisualFeatures(priorLists){
@@ -194,8 +253,6 @@ function findItemsVisualFeaturesOneList(list){
       new_lists.push(getElementsWith(feature,unique_fs, filter_features_to_use));
     }
   }
-  console.log("new_lists");
-  console.log(new_lists);
   
   return new_lists;
 }
@@ -212,9 +269,6 @@ function getFeature(element, feature){
 }
 
 function getElementsWith(feature, feature_value_list, filter_features){
-  console.log(feature);
-  console.log(feature_value_list);
-  console.log(filter_features);
   var nodes = document.getElementsByTagName("*");
   var node_list = [];
   for (i=0;i<nodes.length;i++){
@@ -232,8 +286,6 @@ function getElementsWith(feature, feature_value_list, filter_features){
       }
     }
   }
-  console.log("node_list");
-  console.log(node_list);
   return node_list;
 }
 
@@ -248,7 +300,6 @@ function findItemsUsefulIterations(xpathList){
   }
   
   var subsets = combine(indexes,2);
-  console.log(subsets);
   
   var nodeLists = [];
   for (var i in subsets){
@@ -268,8 +319,6 @@ function findItemsUsefulIterations(xpathList){
       nodeLists.push(listNodes);
     }
   }
-  console.log("nodeLists");
-  console.log(nodeLists);
   return nodeLists;
 }
 

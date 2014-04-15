@@ -21,5 +21,6 @@
       "matches": ["http://*/*", "https://*/*"],
       "js": ["scripts/lib/utilities.js", "scripts/lib/jquery.js", "scripts/lib/underscore-min.js", "scripts/content/content_script.js"]
     }
-  ]
+  ],
+  "web_accessible_resources": ["scripts/lib/utilities.js", "scripts/lib/jquery.js", "scripts/lib/underscore-min.js"]
 }
