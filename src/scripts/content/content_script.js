@@ -43,10 +43,7 @@ function findLists(text){
     var newLists = findList(matchedNodes[i]);
     //keep in mind that we may have both div and a div's a or something
     //so we may get different matchedNodes turning up same lists.  check
-    for (var j = 0; j<newLists.length; j++){
-      var newList = newLists[j];
-      possibleLists.push(newList);
-    }
+    possibleLists = possibleLists.concat(newLists);
   }
   
   console.log("possibleLists --- all lists we've generated");
@@ -208,6 +205,7 @@ function findItemsVisualFeaturesOneList(list){
     var item = list[i];
     var item_features = {
       "original_list": list,
+      "tag": item.tagName,
       "top": getFeature(item, "top"), 
       "right": getFeature(item, "right"), 
       "bottom": getFeature(item, "bottom"), 
@@ -218,6 +216,7 @@ function findItemsVisualFeaturesOneList(list){
       "font-family": getFeature(item, "font-family"),
       "font-style": getFeature(item, "font-style"),
       "font-weight": getFeature(item, "font-weight"),
+      "color": getFeature(item, "color"),
       "background-color": getFeature(item, "background-color")};
     visual_features.push(item_features);
   }
@@ -225,7 +224,7 @@ function findItemsVisualFeaturesOneList(list){
   var new_lists = [];
   
   //font-family may be a good way to limit
-  filter_features = ["font-family"];
+  filter_features = ["font-family","color"];
   filter_features_to_use = {};
   for (var i = 0; i< filter_features.length; i++){
     var feature = filter_features[i];
