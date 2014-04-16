@@ -49,6 +49,9 @@ function findLists(text){
     }
   }
   
+  console.log("possibleLists --- all lists we've generated");
+  console.log(possibleLists);
+  
   //global nodeLists so that if we get messages from mainpanel, can highlight the relevant list
   nodeLists = [];
   textLists = [];
@@ -134,8 +137,6 @@ function findList(node){
   newLists = findItemsClass(possibleLists);
   possibleLists = possibleLists.concat(newLists);
 
-  console.log("possibleLists");
-  console.log(possibleLists);
   return possibleLists;
 }
 
@@ -145,8 +146,6 @@ function findItemsClass(priorLists){
     var list = priorLists[i];
     class_lists = class_lists.concat(findItemsClassOneList(list));
   }
-  console.log("class_lists");
-  console.log(class_lists);
   return class_lists;
 }
 
@@ -160,17 +159,11 @@ function findItemsClassOneList(list){
     }
     class_lists.push(classes);
   }
-  console.log("class_lists");
-  console.log(class_lists);
   var shared_classes = _.intersection.apply(_,class_lists);
   if (shared_classes.length < 1){
     return;
   }
-  console.log(shared_classes);
-  console.log(shared_classes === [null]);
   var new_lists = getElementsWithClasses(shared_classes, list);
-  console.log("class --- new_lists");
-  console.log(new_lists);
   return new_lists;
 }
 
@@ -182,10 +175,6 @@ function getElementsWithClasses(classes, original_list){
       return _.reduce(original_list.slice(1,original_list.length),
         function(acc,elem){return (acc && $.contains(potential_parent, elem));},true);}).first();
   var selector = "."+classes.join(".");
-  console.log(selector);
-  console.log(classes);
-  console.log($(selector));
-  console.log(first_shared_parent);
   var new_list = first_shared_parent.find(selector);
   new_lists.push(new_list);
   var parents = first_shared_parent.parents();
@@ -194,6 +183,9 @@ function getElementsWithClasses(classes, original_list){
     var parent = $(parents[i]);
       var new_list = parent.find(selector);
       if (new_list.length > new_list_length){
+        console.log("New class-based list.");
+        console.log(selector);
+        console.log(new_list);
         new_lists.push(new_list);
         new_list_length = new_list.length;
       }
@@ -205,7 +197,7 @@ function findItemsVisualFeatures(priorLists){
   var visual_lists = [];
   for (var i in priorLists){
     var list = priorLists[i];
-    visual_lists.concat(findItemsVisualFeaturesOneList(list));
+    visual_lists = visual_lists.concat(findItemsVisualFeaturesOneList(list));
   }
   return visual_lists;
 }
@@ -254,6 +246,8 @@ function findItemsVisualFeaturesOneList(list){
     }
   }
   
+  console.log("visual features lists");
+  console.log(new_lists);
   return new_lists;
 }
 
@@ -269,6 +263,8 @@ function getFeature(element, feature){
 }
 
 function getElementsWith(feature, feature_value_list, filter_features){
+  console.log("New visual features-based list.");
+  console.log(feature+": "+feature_value_list);
   var nodes = document.getElementsByTagName("*");
   var node_list = [];
   for (i=0;i<nodes.length;i++){
@@ -286,6 +282,7 @@ function getElementsWith(feature, feature_value_list, filter_features){
       }
     }
   }
+  console.log(node_list);
   return node_list;
 }
 
