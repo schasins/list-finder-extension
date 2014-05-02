@@ -90,7 +90,7 @@ function highlight(nodeLists,color){
 }
 
 //the ideal interface, accepting a set of positive examples, set of neg
-function listOfListsOfNodes(positiveNodes, negativeNodes){
+function getCandidateDomains(positiveNodes, negativeNodes){
   var node = null;
   if (positiveNodes.length > 0){
     node = positiveNodes[0];
