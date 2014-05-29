@@ -19,25 +19,25 @@ function setUp(){
 
 $(setUp);
 
+var stored_background_colors = {};
 var stored_outlines = {};
-var stored_z_indexes = {};
 
 function outline(event){
   if (!currentlyOn){return;}
   
   var $target = $(event.target);
+  stored_background_colors[$target] = $target.css('background-color');
   stored_outlines[$target] = $target.css('outline');
-  stored_z_indexes[$target] = $target.css('z-index');
-  $target.css('outline', "solid red 1px");
-  $target.css('z-index', "100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+  $target.css('background-color', '#FFA245');
+  $target.css('outline', '#FFA245 1px solid');
 }
 
 function unoutline(event){
   if (!currentlyOn){return;}
   
   var $target = $(event.target);
+  $target.css('background-color', stored_background_colors[$target]);
   $target.css('outline', stored_outlines[$target]);
-  $target.css('z-index', stored_z_indexes[$target]);
 }
 
 function findListsWithEvent(event){
