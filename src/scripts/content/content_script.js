@@ -6,6 +6,8 @@ var nodeLists = null;
 var currHighlightedIndex = 0;
 
 function setUp(){
+  document.addEventListener('mouseover', outline, true);
+  document.addEventListener('mouseout', unoutline, true);
   document.addEventListener('click', findListsWithEvent, true);
   
   utilities.listenForMessage("background", "content", "currentlyOn", function(msg_co){currentlyOn = msg_co;});
@@ -16,6 +18,27 @@ function setUp(){
 }
 
 $(setUp);
+
+var stored_outlines = {};
+var stored_z_indexes = {};
+
+function outline(event){
+  if (!currentlyOn){return;}
+  
+  var $target = $(event.target);
+  stored_outlines[$target] = $target.css('outline');
+  stored_z_indexes[$target] = $target.css('z-index');
+  $target.css('outline', "solid red 1px");
+  $target.css('z-index', "100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+}
+
+function unoutline(event){
+  if (!currentlyOn){return;}
+  
+  var $target = $(event.target);
+  $target.css('outline', stored_outlines[$target]);
+  $target.css('z-index', stored_z_indexes[$target]);
+}
 
 function findListsWithEvent(event){
   if (!currentlyOn){
@@ -54,7 +77,7 @@ function findLists(text){
   textLists = [];
   for (var i in possibleLists){
     var possibleList = possibleLists[i];
-    var textList = _.map(possibleList,function(a){return $(a).text();});
+    var textList = _.map(possibleList,function(a){console.log(a); console.log($(a).text()); return $(a).text();});
     var index = indexOfArrayInArrayOfArrays(textList, textLists);
     if (index == -1){
       textLists.push(textList);
