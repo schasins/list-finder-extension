@@ -138,6 +138,7 @@ var positive_nodes = [];
 var negative_nodes = [];
 var currentSelector = null;
 var currentSelectorNodes = [];
+var firstClick = true;
 
 function newNode(event){
   if (!currentlyOn){
@@ -161,6 +162,17 @@ function newNode(event){
     positive_nodes.push(target);
   }
   
+  //if this is the first click on the page, (so only one pos example)
+  //try to make a guess about what the list will be
+  //do this by adding a second likely list member to positive examples
+  if (firstClick){
+    var likely_member = findSibling(positive_nodes[0]);
+    if (likely_member != null){
+      positive_nodes.push(likely_member);
+    }
+    firstClick = false;
+  }
+  
   //synthesize a selector with our new information (node)
   synthesizeSelector();
   
@@ -172,6 +184,25 @@ function newNode(event){
   //log the new stuff
   console.log(currentSelector);
   console.log(currentSelectorNodes);
+}
+
+function findSibling(node){
+  var xpath_list = xPathToXPathList(nodeToXPath(node));
+  for (var i = (xpath_list.length - 1); i >= 0; i--){
+    var index = parseInt(xpath_list[i]["index"]);
+    xpath_list[i]["index"] = index + 1;
+    var xpath_string = xPathToString(xpath_list);
+    var nodes = xPathToNodes(xpath_string);
+    if (nodes.length > 0) { return nodes[0]; }
+    if (index > 0){
+      xpath_list[i]["index"] = index - 1;
+      xpath_string = xPathToString(xpath_list);
+      nodes = xPathToNodes(xpath_string);
+      if (nodes.length > 0) { return nodes[0]; }
+    }
+    xpath_list[i]["index"] = index;
+  }
+  return null;
 }
 
 function synthesizeSelector(){
@@ -319,7 +350,8 @@ function xPathToString(xpath_list){
       str += "["+node.index+"]/";
     }
   }
-  return str;
+  //add the HTML back to the beginning, remove the trailing slash
+  return "HTML/"+str.slice(0,str.length-1);
 }
 
 /**********************************************************************
@@ -380,6 +412,7 @@ function xPathToNodes(xpath) {
     return results;
   } catch (e) {
     console.log('xPath throws error when evaluated', xpath);
+    console.log(e);
   }
   return [];
 }
