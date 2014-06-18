@@ -157,9 +157,13 @@ function newNode(event){
   //it's in the old list
   if (_.contains(currentSelectorNodes,target)){
     negative_nodes.push(target);
+    //if this node was in positive_nodes, remove it
+    positive_nodes = _.without(positive_nodes,target);
   }
   else{
     positive_nodes.push(target);
+    //if this node was in negative_nodes, remove it
+    negative_nodes = _.without(negative_nodes,target);
   }
   
   //if this is the first click on the page, (so only one pos example)
