@@ -158,7 +158,9 @@ function newNode(event){
   if (_.contains(currentSelectorNodes,target)){
     negative_nodes.push(target);
     //if this node was in positive_nodes, remove it
-    positive_nodes = _.without(positive_nodes,target);
+    //if it prompted the addition of a sibling node (see below),
+    //remove the sibling node too
+    positive_nodes = _.without(positive_nodes,target,target["sibling"]);
   }
   else{
     positive_nodes.push(target);
@@ -172,6 +174,7 @@ function newNode(event){
   if (firstClick){
     var likely_member = findSibling(positive_nodes[0]);
     if (likely_member != null){
+      positive_nodes[0]["sibling"] = likely_member;
       positive_nodes.push(likely_member);
     }
     firstClick = false;
