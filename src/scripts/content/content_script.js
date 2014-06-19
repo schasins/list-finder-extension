@@ -220,11 +220,11 @@ function synthesizeSelector(features){
   if(typeof(features)==='undefined') {features = ["tag", "xpath"];}
   
   var feature_dict = featureDict(features, positive_nodes);
-  console.log("hasownproperty");
-  console.log(feature_dict.hasOwnProperty("xpath"));
-  console.log(feature_dict);
   if (!feature_dict.hasOwnProperty("xpath") && features !== all_features){
     //xpath alone can't handle our positive nodes
+    return synthesizeSelector(all_features);
+  }
+  if (feature_dict.hasOwnProperty("tag") && feature_dict["tag"].length > 1 && features !== all_features){
     return synthesizeSelector(all_features);
   }
   var nodes = interpretListSelector(feature_dict, false);
@@ -274,6 +274,8 @@ function featureDict(features, positive_nodes){
   var filtered_feature_dict = {};
   for (var feature in feature_dict){
     var values = _.uniq(feature_dict[feature]);
+    console.log(feature);
+    console.log(values);
     if (feature == "xpath"){
       filtered_feature_dict[feature] = xPathReduction(values);
     }
@@ -341,7 +343,6 @@ function xPathMerge(xPathWithWildcards, xPath){
       targetNode.iterable = true;
     }
   }
-  console.log("true");
   return true;
 }
 
@@ -360,7 +361,6 @@ function xPathReduction(xpath_list){
       //in case of success, candidate_match will now contain the
       //updated, merged xpath
       if (success){
-        console.log(xPathToString(candidate_match));
         break;
       }
     }
