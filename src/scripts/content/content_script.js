@@ -70,8 +70,8 @@ function unoutline(event){
 */
 
 var features = ["tag", "class", 
-  "left", "bottom", "right", "top", 
-  "font-size", "font-family", "font-style", "font-weight", "color", 
+  "left", "bottom", "right", "top", "width", "height",
+  "font-size", "font-family", "font-style", "font-weight", "color",
   "background-color", 
   "xpath"];
 
@@ -82,7 +82,7 @@ function getFeature(element, feature){
   else if (_.contains(["tag","class"],feature)){
     return element[feature+"Name"];
   }
-  else if (_.contains(["top", "right", "bottom", "left"], feature)){
+  else if (_.contains(["top", "right", "bottom", "left", "width", "height"], feature)){
     var rect = element.getBoundingClientRect();
     return rect[feature];
   }
@@ -139,6 +139,7 @@ var negative_nodes = [];
 var currentSelector = null;
 var currentSelectorNodes = [];
 var firstClick = true;
+var likeliestSibling = null;
 
 function newNode(event){
   if (!currentlyOn){
@@ -161,6 +162,8 @@ function newNode(event){
     //if it prompted the addition of a sibling node (see below),
     //remove the sibling node too
     positive_nodes = _.without(positive_nodes,target,target["sibling"]);
+    //if this was our first negative node, remove the likeliest sibling
+    positive_nodes = _.without(positive_nodes,likeliestSibling);
   }
   else{
     positive_nodes.push(target);
@@ -176,6 +179,7 @@ function newNode(event){
     if (likely_member != null){
       positive_nodes[0]["sibling"] = likely_member;
       positive_nodes.push(likely_member);
+      likeliestSibling = likely_member;
     }
     firstClick = false;
   }
@@ -236,7 +240,7 @@ function synthesizeSelector(){
     if (feature == "xpath"){
       filtered_feature_dict[feature] = xPathReduction(values);
     }
-    if (values.length <= 3 && values.length != positive_nodes.length){
+    if (values.length <= 3 && values.length != positive_nodes.length && values.length != (positive_nodes.length - 1)){
         filtered_feature_dict[feature] = values;
     }
   }
@@ -303,6 +307,10 @@ function xPathMatch(xPathWithWildcards,xPath){
 }
 
 function xPathMerge(xPathWithWildcards, xPath){
+  console.log("*********************");
+  console.log(xPathToString(xPathWithWildcards));
+  console.log(xPathToString(xPath));
+  console.log("---------------------");
   if (xPathWithWildcards.length != xPath.length){
     return false;
   }
@@ -316,6 +324,7 @@ function xPathMerge(xPathWithWildcards, xPath){
       targetNode.iterable = true;
     }
   }
+  console.log("true");
   return true;
 }
 
@@ -331,9 +340,10 @@ function xPathReduction(xpath_list){
     for (var j = 0; j < xPathsWithWildcards.length; j++){
       var candidate_match = xPathsWithWildcards[j];
       success = xPathMerge(candidate_match, new_xpath);
-      //in case of success, xPathsWithWildcards will now contain the
+      //in case of success, candidate_match will now contain the
       //updated, merged xpath
       if (success){
+        console.log(xPathToString(candidate_match));
         break;
       }
     }
