@@ -274,8 +274,6 @@ function featureDict(features, positive_nodes){
   var filtered_feature_dict = {};
   for (var feature in feature_dict){
     var values = _.uniq(feature_dict[feature]);
-    console.log(feature);
-    console.log(values);
     if (feature == "xpath"){
       filtered_feature_dict[feature] = xPathReduction(values);
     }
