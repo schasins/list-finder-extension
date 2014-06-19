@@ -69,7 +69,7 @@ function unoutline(event){
  * excludeFirst
 */
 
-var features = ["tag", "class", 
+var all_features = ["tag", "class", 
   "left", "bottom", "right", "top", "width", "height",
   "font-size", "font-family", "font-style", "font-weight", "color",
   "background-color", 
@@ -216,7 +216,44 @@ function findSibling(node){
   return null;
 }
 
-function synthesizeSelector(){
+function synthesizeSelector(features){
+  if(typeof(features)==='undefined') {features = ["tag", "xpath"];}
+  
+  var feature_dict = featureDict(features, positive_nodes);
+  console.log("hasownproperty");
+  console.log(feature_dict.hasOwnProperty("xpath"));
+  console.log(feature_dict);
+  if (!feature_dict.hasOwnProperty("xpath") && features !== all_features){
+    //xpath alone can't handle our positive nodes
+    return synthesizeSelector(all_features);
+  }
+  var nodes = interpretListSelector(feature_dict, false);
+  
+  //now handle negative examples
+  var exclude_first = false;
+  for (var i = 0; i < nodes.length ; i++){
+    var node = nodes[i];
+    if (_.contains(negative_nodes, node)){
+      if (i == 0){
+        exclude_first = true;
+      }
+      else if (features !== all_features) {
+        //xpaths weren't enough to exclude nodes we need to exclude
+        return synthesizeSelector(all_features);
+      }
+      else {
+        //we're using all our features, and still haven't excluded
+        //the ones we want to exclude.  what do we do?  TODO
+      }
+    }
+  }
+  
+  //update our globals that track the current selector and list
+  currentSelectorNodes = interpretListSelector(feature_dict, exclude_first);
+  currentSelector = {"dict": feature_dict, "exclude_first": exclude_first};
+}
+
+function featureDict(features, positive_nodes){
   //initialize empty feature dict
   var feature_dict = {};
   for (var i = 0; i < features.length; i++){
@@ -244,23 +281,7 @@ function synthesizeSelector(){
         filtered_feature_dict[feature] = values;
     }
   }
-  
-  var nodes = interpretListSelector(filtered_feature_dict, false);
-  
-  //now handle negative examples
-  var exclude_first = false;
-  for (var i = 0; i < nodes.length ; i++){
-    var node = nodes[i];
-    if (_.contains(negative_nodes, node)){
-      if (i == 0){
-        exclude_first = true;
-      }
-    }
-  }
-  
-  //update our globals that track the current selector and list
-  currentSelectorNodes = interpretListSelector(filtered_feature_dict, exclude_first);
-  currentSelector = {"dict": filtered_feature_dict, "exclude_first": exclude_first};
+  return filtered_feature_dict;
 }
 
 /**********************************************************************
@@ -307,10 +328,6 @@ function xPathMatch(xPathWithWildcards,xPath){
 }
 
 function xPathMerge(xPathWithWildcards, xPath){
-  console.log("*********************");
-  console.log(xPathToString(xPathWithWildcards));
-  console.log(xPathToString(xPath));
-  console.log("---------------------");
   if (xPathWithWildcards.length != xPath.length){
     return false;
   }
