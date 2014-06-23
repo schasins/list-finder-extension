@@ -190,7 +190,7 @@ function newNode(event){
   //highlight our new list and send it to the panel
   highlight(currentSelectorNodes,"#9EE4FF");
   var textList = _.map(currentSelectorNodes,function(a){return $(a).text();});
-  utilities.sendMessage("content", "mainpanel", "lists", [textList]);
+  utilities.sendMessage("content", "mainpanel", "list", textList);
   
   //log the new stuff
   console.log(currentSelector);
