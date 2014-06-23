@@ -220,13 +220,13 @@ function synthesizeSelector(features){
   if(typeof(features)==='undefined') {features = ["tag", "xpath"];}
   
   var feature_dict = featureDict(features, positive_nodes);
-  if (!feature_dict.hasOwnProperty("xpath") && features !== all_features){
+  if (feature_dict.hasOwnProperty("xpath") && feature_dict["xpath"].length > 3 && features !== all_features){
     //xpath alone can't handle our positive nodes
-    return synthesizeSelector(all_features);
+    return synthesizeSelector(_.without(all_features, "xpath"));
   }
-  if (feature_dict.hasOwnProperty("tag") && feature_dict["tag"].length > 1 && features !== all_features){
-    return synthesizeSelector(all_features);
-  }
+  //if (feature_dict.hasOwnProperty("tag") && feature_dict["tag"].length > 1 && features !== all_features){
+  //  return synthesizeSelector(all_features);
+  //}
   var nodes = interpretListSelector(feature_dict, false);
   
   //now handle negative examples
@@ -239,7 +239,7 @@ function synthesizeSelector(features){
       }
       else if (features !== all_features) {
         //xpaths weren't enough to exclude nodes we need to exclude
-        return synthesizeSelector(all_features);
+        return synthesizeSelector(_.without(all_features, "xpath"));
       }
       else {
         //we're using all our features, and still haven't excluded
@@ -275,6 +275,7 @@ function featureDict(features, positive_nodes){
   for (var feature in feature_dict){
     var values = _.uniq(feature_dict[feature]);
     if (feature == "xpath"){
+      //always add xpath
       filtered_feature_dict[feature] = xPathReduction(values);
     }
     if (values.length <= 3 && values.length != positive_nodes.length && values.length != (positive_nodes.length - 1)){
