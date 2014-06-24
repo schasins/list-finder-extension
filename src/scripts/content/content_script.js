@@ -26,8 +26,10 @@ function setUp(){
   utilities.listenForMessage("mainpanel", "content", "nextButtons", handleNextButtons);
   utilities.listenForMessage("mainpanel", "content", "itemLimit", handleItemLimit);
   utilities.listenForMessage("mainpanel", "content", "run", wholeList);
+  utilities.listenForMessage("mainpanel", "content", "nextButtonDataCollection", nextButtonDataCollection);
 
   utilities.sendMessage("content", "background", "requestCurrentlyOn", "");
+  utilities.sendMessage("content", "mainpanel", "requestNextButtonDataCollection", "");
 }
 
 $(setUp);
@@ -396,6 +398,10 @@ function xPathToString(xpath_list){
 
 var next_button_type = null;
 var next_or_more_button = null;
+var next_or_more_button_tag = "";
+var next_or_more_button_text = "";
+var next_or_more_button_id = "";
+var next_or_more_button_xpath = "";
 var item_limit = 1000;
 
 function handleNextButtons(message_contents){
@@ -403,6 +409,8 @@ function handleNextButtons(message_contents){
   if (message_contents === "next_button" || message_contents === "more_button"){
     //prevent synthesis from running the next time anything is clicked
     //and process that click instead as the 'next button'
+    console.log("waiting for next button click");
+    document.removeEventListener('click', newNode, true);
     document.addEventListener('click', clickedNextButton, true);
   }
   else {
@@ -411,10 +419,16 @@ function handleNextButtons(message_contents){
 }
 
 function clickedNextButton(event){
-  //TODO: change this to actually record important features so we can use it on the next page
-  //will also have to store the info with the mainpanel or something if it's a next button
+  event.stopPropagation();
+  event.preventDefault();
   next_or_more_button = $(event.target);
+  next_or_more_button_tag = next_or_more_button.prop("tagName");
+  next_or_more_button_text = next_or_more_button.text();
+  next_or_more_button_id = next_or_more_button.attr("id");
+  next_or_more_button_xpath = nodeToXPath(event.target);
   //go back to the normal click processing
+  console.log("clicked next button");
+  document.removeEventListener('click', clickedNextButton, true);
   document.addEventListener('click', newNode, true);
 }
 
@@ -434,27 +448,118 @@ function useCurrentSelector(){
     highlight(currentSelectorNodes,"initial");
     currentSelectorNodes = interpretListSelector(currentSelector["dict"], currentSelector["exclude_first"]);
     highlight(currentSelectorNodes,"#9EE4FF");
-    whole_list = _.map(currentSelectorNodes,function(a){return $(a).text();});
-    utilities.sendMessage("content", "mainpanel", "list", whole_list);
+    list = _.map(currentSelectorNodes,function(a){return $(a).text();});
+    return list;
+}
+
+function wholeListHelper(get_more_items_func,send_message_func){
+  if (whole_list.length < item_limit && steps_since_progress <= 5){
+    get_more_items_func();
+    whole_list = useCurrentSelector();
+    send_message_func(whole_list);
+    steps_since_progress ++;
+    if (whole_list.length > whole_list_length){
+      steps_since_progress = 0;
+      whole_list_length = whole_list.length;
+    }
+    setTimeout(wholeList,500);
+  }
 }
 
 function wholeList(){
-  whole_list = [];
+  var send_full = function(list){utilities.sendMessage("content", "mainpanel", "list", list);};
+  var send_partial = function(list){utilities.sendMessage("content", "mainpanel", "partialList", list);};
+  var get_more_items = function(){var button = findButton(); if (button !== null){document.removeEventListener('click', newNode, true); button.click(); document.addEventListener('click', newNode, true);}};
+    
+  console.log(next_button_type);
   if (next_button_type === null){
-    useCurrentSelector();
+    var list = useCurrentSelector();
+    send_full(list);
   }
   else if (next_button_type === "scroll_for_more"){
-    if (whole_list.length < item_limit && steps_since_progress <= 5){
-        window.scrollBy(0,1000);
-        useCurrentSelector();
-        steps_since_progress ++;
-        if (whole_list.length > whole_list_length){
-          steps_since_progress = 0;
-          whole_list_length = whole_list.length;
+    var get_more_items = function(){window.scrollBy(0,1000);};
+    wholeListHelper(get_more_items,send_full);
+  }
+  else if (next_button_type === "more_button"){
+    var get_more_items = function(){var button = findButton(); if (button !== null){document.removeEventListener('click', newNode, true); button.click(); document.addEventListener('click', newNode, true);}};
+    wholeListHelper(get_more_items,send_full);
+  }
+  else if (next_button_type === "next_button"){
+    var data = {"currentSelector":currentSelector, 
+                "next_or_more_button_tag": next_or_more_button_tag,
+                "next_or_more_button_text": next_or_more_button_text,
+                "next_or_more_button_id": next_or_more_button_id,
+                "next_or_more_button_xpath": next_or_more_button_xpath,
+                "item_limit": item_limit};
+    utilities.sendMessage("content", "mainpanel", "nextButtonDataCollectionModeOn", data);
+    //TODO:make sure we don't send the same list multiple times
+    wholeListOnePage();
+  }
+}
+
+function nextButtonDataCollection(data){
+  currentSelector = data["currentSelector"];
+  next_or_more_button_tag = data["next_or_more_button_tag"];
+  next_or_more_button_text = data["next_or_more_button_text"];
+  next_or_more_button_id = data["next_or_more_button_id"];
+  next_or_more_button_xpath = data["next_or_more_button_xpath"];
+  item_limit = data["item_limit"];
+  wholeListOnePage();
+}
+
+function wholeListOnePage(){
+  //this will only be called when we need to get part of the whole list
+  var send_partial = function(list){utilities.sendMessage("content", "mainpanel", "partialList", list);};
+  var list = useCurrentSelector();
+  send_partial(list);
+  var button = findButton();
+  if (button !== null){
+    document.removeEventListener('click', newNode, true);
+    button.click();
+  }
+  else{
+    //should let the mainpanel know that we're going to have to stop
+    //since we couldn't find a button
+    utilities.sendMessage("content", "mainpanel", "nextButtonDataCollectionModeOff", "");
+  }
+  //in case we're in an AJAX next button case, let's check with the
+  //mainpanel to see if we should keep going
+  setTimeout(function(){utilities.sendMessage("content", "mainpanel", "requestNextButtonDataCollection", "");},500);
+}
+
+function findButton(){
+  var button = null;
+  var candidate_buttons = $(next_or_more_button_tag).filter(function(){ return $(this).text() === next_or_more_button_text;})
+  //hope there's only one button
+  if (candidate_buttons.length === 1){
+    button = candidate_buttons[0];
+  }
+  else{
+    //if not and demo button had id, try using the id
+    if (next_or_more_button_id !== undefined && next_or_more_button_id !== ""){
+      console.log("trying id");
+      button = $("#"+next_or_more_button_id);
+    }
+    else{
+      //see which candidate has the right text and closest xpath
+      var min_distance = 999999;
+      var min_candidate = null;
+      for (var i=0; i<candidate_buttons.length; i++){
+        candidate_xpath = nodeToXPath(candidate_buttons[i]);
+        var distance = levenshteinDistance(candidate_xpath,next_or_more_button_xpath);
+        if (distance<min_distance){
+          min_distance = distance;
+          min_candidate = candidate_buttons[i];
         }
-        setTimeout(wholeList,500);
+      }
+      if (min_candidate === null){
+        console.log("couldn't find an appropriate 'more' button");
+        console.log(next_or_more_button_tag, next_or_more_button_id, next_or_more_button_text, next_or_more_button_xpath);
+      }
+      button = min_candidate;
     }
   }
+  return button;
 }
 
 /**********************************************************************
@@ -467,6 +572,17 @@ function highlight(nodeList,color){
     stored_background_colors[$node.html()] = color;
   }
   $(nodeList).css('background-color', color);
+}
+
+function levenshteinDistance (s, t) {
+        if (s.length === 0) return t.length;
+        if (t.length === 0) return s.length;
+ 
+        return Math.min(
+                levenshteinDistance(s.substr(1), t) + 1,
+                levenshteinDistance(t.substr(1), s) + 1,
+                levenshteinDistance(s.substr(1), t.substr(1)) + (s[0] !== t[0] ? 1 : 0)
+        );
 }
 
 function isNumber(n) {

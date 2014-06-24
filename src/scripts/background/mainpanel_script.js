@@ -1,5 +1,9 @@
 function setUp(){
   utilities.listenForMessage("content", "mainpanel", "list", showList);
+  utilities.listenForMessage("content", "mainpanel", "partialList", showPartialList);
+  utilities.listenForMessage("content", "mainpanel", "nextButtonDataCollectionModeOn", nextButtonDataCollectionModeOn);
+  utilities.listenForMessage("content", "mainpanel", "requestNextButtonDataCollection", nextButtonDataCollectionNotify);
+  utilities.listenForMessage("content", "mainpanel", "nextButtonDataCollectionModeOff", nextButtonDataCollectionModeOff);
   $(".radio").click(processButton);
   $("#run").click(processRun);
   document.forms["itemLimit"].addEventListener('submit', processItemLimit, false);
@@ -17,6 +21,13 @@ function showList(list){
     contentString+="<div>"+list[j]+"</div>";
   }
   $listDiv.html(contentString);
+}
+
+var whole_list = [];
+
+function showPartialList(list){
+  whole_list = whole_list.concat(list);
+  showList(whole_list);
 }
 
 function sendListMessage(event){
@@ -38,5 +49,31 @@ function processItemLimit(event){
 }
 
 function processRun(event){
+  whole_list = [];
   utilities.sendMessage("mainpanel", "content", "run", "");
+}
+
+var nextButtonDataCollectionMode = false;
+var nextButtonDataCollectionData = null;
+var nextButtonDataCollectionItemLimit = 1000;
+
+function nextButtonDataCollectionModeOn(data){
+  nextButtonDataCollectionMode = true;
+  nextButtonDataCollectionData = data;
+  nextButtonDataCollectionItemLimit = data["item_limit"];
+}
+
+function nextButtonDataCollectionModeOff(){
+  nextButtonDataCollectionMode = false;
+}
+
+function nextButtonDataCollectionNotify(){
+  if (nextButtonDataCollectionMode){
+    if (whole_list.length < nextButtonDataCollectionItemLimit){
+      utilities.sendMessage ("mainpanel", "content", "nextButtonDataCollection", nextButtonDataCollectionData);
+    }
+    else {
+      nextButtonDataCollectionMode = false;
+    }
+  }
 }
