@@ -23,6 +23,9 @@ function setUp(){
   document.addEventListener('click', newNode, true);
   
   utilities.listenForMessage("background", "content", "currentlyOn", function(msg_co){currentlyOn = msg_co;});
+  utilities.listenForMessage("mainpanel", "content", "nextButtons", handleNextButtons);
+  utilities.listenForMessage("mainpanel", "content", "itemLimit", handleItemLimit);
+  utilities.listenForMessage("mainpanel", "content", "run", wholeList);
 
   utilities.sendMessage("content", "background", "requestCurrentlyOn", "");
 }
@@ -385,6 +388,73 @@ function xPathToString(xpath_list){
   }
   //add the HTML back to the beginning, remove the trailing slash
   return "HTML/"+str.slice(0,str.length-1);
+}
+
+/**********************************************************************
+ * Handle next buttons
+**********************************************************************/
+
+var next_button_type = null;
+var next_or_more_button = null;
+var item_limit = 1000;
+
+function handleNextButtons(message_contents){
+  next_button_type = message_contents;
+  if (message_contents === "next_button" || message_contents === "more_button"){
+    //prevent synthesis from running the next time anything is clicked
+    //and process that click instead as the 'next button'
+    document.addEventListener('click', clickedNextButton, true);
+  }
+  else {
+    //message_contents was scroll_for_more, nothing to do
+  }
+}
+
+function clickedNextButton(event){
+  //TODO: change this to actually record important features so we can use it on the next page
+  //will also have to store the info with the mainpanel or something if it's a next button
+  next_or_more_button = $(event.target);
+  //go back to the normal click processing
+  document.addEventListener('click', newNode, true);
+}
+
+function handleItemLimit(limit){
+  item_limit = parseInt(limit);
+}
+
+/**********************************************************************
+ * Retrieve the whole list
+**********************************************************************/
+
+var whole_list = [];
+var steps_since_progress = 0;
+var whole_list_length = 0;
+
+function useCurrentSelector(){
+    highlight(currentSelectorNodes,"initial");
+    currentSelectorNodes = interpretListSelector(currentSelector["dict"], currentSelector["exclude_first"]);
+    highlight(currentSelectorNodes,"#9EE4FF");
+    whole_list = _.map(currentSelectorNodes,function(a){return $(a).text();});
+    utilities.sendMessage("content", "mainpanel", "list", whole_list);
+}
+
+function wholeList(){
+  whole_list = [];
+  if (next_button_type === null){
+    useCurrentSelector();
+  }
+  else if (next_button_type === "scroll_for_more"){
+    if (whole_list.length < item_limit && steps_since_progress <= 5){
+        window.scrollBy(0,1000);
+        useCurrentSelector();
+        steps_since_progress ++;
+        if (whole_list.length > whole_list_length){
+          steps_since_progress = 0;
+          whole_list_length = whole_list.length;
+        }
+        setTimeout(wholeList,500);
+    }
+  }
 }
 
 /**********************************************************************

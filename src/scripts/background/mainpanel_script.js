@@ -1,7 +1,11 @@
 function setUp(){
   utilities.listenForMessage("content", "mainpanel", "list", showList);
-  document.forms["text"].addEventListener('submit', processForm, false);
+  $(".radio").click(processButton);
+  $("#run").click(processRun);
+  document.forms["itemLimit"].addEventListener('submit', processItemLimit, false);
   $("#tabs").tabs();
+  $("#radio").buttonset();
+  $("button").button();
 }
 
 $(setUp);
@@ -21,9 +25,18 @@ function sendListMessage(event){
   utilities.sendMessage ("mainpanel", "content", "listsIndex", index);
 }
 
-function processForm(){
-  var text = document.forms["text"]["text"].value;
-  utilities.sendMessage ("mainpanel", "content", "processText", text);
-  event.returnValue=false;
+function processButton(event){
+  var $target = $(event.target);
+  var id = $target.attr('id');
+  utilities.sendMessage("mainpanel", "content", "nextButtons", id);
+}
+
+function processItemLimit(event){
+  var limit = document.forms["itemLimit"]["itemLimit"].value;
+  utilities.sendMessage ("mainpanel", "content", "itemLimit", limit);
   return false;
+}
+
+function processRun(event){
+  utilities.sendMessage("mainpanel", "content", "run", "");
 }

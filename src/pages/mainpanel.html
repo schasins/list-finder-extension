@@ -8,13 +8,9 @@
 	<script type="text/javascript" src="../scripts/background/mainpanel_script.js"></script>
 	
 	<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
-	<style type="text/css">
-		p{
-			font-size: 10px;
-		}
-	</style>
 </head>
 <body>
+ <button id="run">Run</button>
  <div id="tabs">
 	 <ul>
 		 <li><a href='#list'>List</a></li>
@@ -22,10 +18,15 @@
 	 </ul>
 	 <div id="list"></div>
 	 <div id="next_buttons">
-		<form name="text">
-		<input type="text" name="text">
-		<input type="submit" value="Submit">
-		</form>
+		  <div id="radio">
+			<input class="radio" type="radio" id="next_button" name="radio"><label for="next_button">Next Button</label>
+			<input class="radio" type="radio" id="more_button" name="radio"><label for="more_button">More Button</label>
+			<input class="radio" type="radio" id="scroll_for_more" name="radio"><label for="scroll_for_more">Scroll For More</label>
+		  </div>
+		  <form name="itemLimit">
+			Limit on items to collect: <input type="text" name="itemLimit" placeholder="1000">
+			<input type="submit" value="Submit">
+		  </form>
 	 </div>
  </div>
 </body>
