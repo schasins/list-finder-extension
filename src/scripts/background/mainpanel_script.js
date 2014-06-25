@@ -18,7 +18,7 @@ function showList(list){
   var $listDiv = $("#list");
   var contentString = ""
   for (var j = 0; j<list.length; j++){
-    contentString+="<div>"+list[j]+"</div>";
+    contentString+="<div>"+_.escape(list[j])+"</div>";
   }
   $listDiv.html(contentString);
 }
@@ -27,23 +27,12 @@ var whole_list = [];
 var prev_list = [];
 
 function showPartialList(list){
-  if (arraysEqual(list,prev_list)){
+  if (_.isEqual(list,prev_list)){
     return;
   }
   whole_list = whole_list.concat(list);
   showList(whole_list);
   prev_list = list;
-}
-
-function arraysEqual(a, b) {
-  if (a === b) return true;
-  if (a == null || b == null) return false;
-  if (a.length != b.length) return false;
-
-  for (var i = 0; i < a.length; ++i) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
 }
 
 function sendListMessage(event){
