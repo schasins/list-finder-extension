@@ -71,7 +71,7 @@ function processRun(event){
 
 var nextButtonDataCollectionMode = false;
 var nextButtonDataCollectionData = null;
-var nextButtonDataCollectionItemLimit = 1000;
+var nextButtonDataCollectionItemLimit = 100000;
 
 function nextButtonDataCollectionModeOn(data){
   nextButtonDataCollectionMode = true;

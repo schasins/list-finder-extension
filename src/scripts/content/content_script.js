@@ -402,7 +402,7 @@ var next_or_more_button_tag = "";
 var next_or_more_button_text = "";
 var next_or_more_button_id = "";
 var next_or_more_button_xpath = "";
-var item_limit = 1000;
+var item_limit = 100000;
 
 function handleNextButtons(message_contents){
   next_button_type = message_contents;
