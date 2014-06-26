@@ -157,24 +157,23 @@ function interpretListSelector(feature_dict, exclude_first){
 }
 
 /**********************************************************************
- * Generating domain selector from user clicks
+ * User interface
 **********************************************************************/
 
 var positive_nodes = [];
 var negative_nodes = [];
-var currentSelector = null;
-var currentSelectorNodes = [];
-var firstClick = true;
-var likeliestSibling = null;
+var current_selector = null;
+var current_selector_nodes = [];
+var first_click = true;
+var likeliest_sibling = null;
 
 function newNode(event){
   if (!currentlyOn){
-    console.log("returning: "+currentlyOn);
     return;
   }
   
   //dehighlight our old list
-  highlight(currentSelectorNodes,"initial");
+  highlight(current_selector_nodes,"initial");
   
   event.stopPropagation();
   event.preventDefault();
@@ -182,14 +181,12 @@ function newNode(event){
   var target = event.target;
   //decide whether it's a positive or negative example based on whether
   //it's in the old list
-  if (_.contains(currentSelectorNodes,target)){
+  if (_.contains(current_selector_nodes,target)){
     negative_nodes.push(target);
     //if this node was in positive_nodes, remove it
-    //if it prompted the addition of a sibling node (see below),
-    //remove the sibling node too
-    positive_nodes = _.without(positive_nodes,target,target["sibling"]);
+    positive_nodes = _.without(positive_nodes,target);
     //if this was our first negative node, remove the likeliest sibling
-    positive_nodes = _.without(positive_nodes,likeliestSibling);
+    positive_nodes = _.without(positive_nodes,likeliest_sibling);
   }
   else{
     positive_nodes.push(target);
@@ -200,27 +197,25 @@ function newNode(event){
   //if this is the first click on the page, (so only one pos example)
   //try to make a guess about what the list will be
   //do this by adding a second likely list member to positive examples
-  if (firstClick){
-    var likely_member = findSibling(positive_nodes[0]);
-    if (likely_member != null){
-      positive_nodes[0]["sibling"] = likely_member;
-      positive_nodes.push(likely_member);
-      likeliestSibling = likely_member;
+  if (first_click){
+    var likeliest_sibling = findSibling(positive_nodes[0]);
+    if (likeliest_sibling != null){
+      positive_nodes.push(likeliest_sibling);
     }
-    firstClick = false;
+    first_click = false;
   }
   
   //synthesize a selector with our new information (node)
   synthesizeSelector();
   
   //highlight our new list and send it to the panel
-  highlight(currentSelectorNodes,"#9EE4FF");
-  var textList = _.map(currentSelectorNodes,function(a){return $(a).text();});
+  highlight(current_selector_nodes,"#9EE4FF");
+  var textList = _.map(current_selector_nodes,function(a){return $(a).text();});
   utilities.sendMessage("content", "mainpanel", "list", textList);
   
   //log the new stuff
-  console.log(currentSelector);
-  console.log(currentSelectorNodes);
+  console.log(current_selector);
+  console.log(current_selector_nodes);
 }
 
 function findSibling(node){
@@ -275,8 +270,8 @@ function synthesizeSelector(features){
   }
   
   //update our globals that track the current selector and list
-  currentSelectorNodes = interpretListSelector(feature_dict, exclude_first);
-  currentSelector = {"dict": feature_dict, "exclude_first": exclude_first};
+  current_selector_nodes = interpretListSelector(feature_dict, exclude_first);
+  current_selector = {"dict": feature_dict, "exclude_first": exclude_first};
 }
 
 function featureDict(features, positive_nodes){
@@ -462,10 +457,10 @@ var steps_since_progress = 0;
 var whole_list_length = 0;
 
 function useCurrentSelector(){
-    highlight(currentSelectorNodes,"initial");
-    currentSelectorNodes = interpretListSelector(currentSelector["dict"], currentSelector["exclude_first"]);
-    highlight(currentSelectorNodes,"#9EE4FF");
-    list = _.map(currentSelectorNodes,function(a){return $(a).text();});
+    highlight(current_selector_nodes,"initial");
+    current_selector_nodes = interpretListSelector(current_selector["dict"], current_selector["exclude_first"]);
+    highlight(current_selector_nodes,"#9EE4FF");
+    list = _.map(current_selector_nodes,function(a){return $(a).text();});
     return list;
 }
 
@@ -502,7 +497,7 @@ function wholeList(){
     wholeListHelper(get_more_items,send_full);
   }
   else if (next_button_type === "next_button"){
-    var data = {"currentSelector":currentSelector, 
+    var data = {"current_selector":current_selector, 
                 "next_or_more_button_tag": next_or_more_button_tag,
                 "next_or_more_button_text": next_or_more_button_text,
                 "next_or_more_button_id": next_or_more_button_id,
@@ -515,7 +510,7 @@ function wholeList(){
 }
 
 function nextButtonDataCollection(data){
-  currentSelector = data["currentSelector"];
+  current_selector = data["current_selector"];
   next_or_more_button_tag = data["next_or_more_button_tag"];
   next_or_more_button_text = data["next_or_more_button_text"];
   next_or_more_button_id = data["next_or_more_button_id"];
