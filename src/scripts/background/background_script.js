@@ -1,6 +1,6 @@
 //open mainpanel
 
-var currentlyOn = false;
+var currently_on = false;
 
 (function() {
   var panelWindow = undefined;
@@ -23,12 +23,12 @@ var currentlyOn = false;
   }
 
   chrome.browserAction.onClicked.addListener(function(tab) {
-    if (!currentlyOn){
+    if (!currently_on){
       openMainPanel();
     }
-    currentlyOn = !currentlyOn;
-    console.log("currently on: "+currentlyOn);
-    utilities.sendMessage("background", "content","currentlyOn", currentlyOn);
+    currently_on = !currently_on;
+    console.log("currently on: "+currently_on);
+    utilities.sendMessage("background", "content","currentlyOn", currently_on);
   });
 
   chrome.windows.onRemoved.addListener(function(winId) {
@@ -39,7 +39,7 @@ var currentlyOn = false;
 
   //openMainPanel();
   
-  utilities.listenForMessage("content", "background", "requestCurrentlyOn",function(){utilities.sendMessage("background","content","currentlyOn", currentlyOn);});
+  utilities.listenForMessage("content", "background", "requestCurrentlyOn",function(){utilities.sendMessage("background","content","currentlyOn", currently_on);});
   
 })();
 

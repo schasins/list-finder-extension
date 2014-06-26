@@ -58,27 +58,27 @@ function processRun(event){
   utilities.sendMessage("mainpanel", "content", "run", "");
 }
 
-var nextButtonDataCollectionMode = false;
-var nextButtonDataCollectionData = null;
-var nextButtonDataCollectionItemLimit = 100000;
+var next_button_data_collection_mode = false;
+var next_button_data_collection_data = null;
+var next_button_data_collection_item_limit = 100000;
 
 function nextButtonDataCollectionModeOn(data){
-  nextButtonDataCollectionMode = true;
-  nextButtonDataCollectionData = data;
+  next_button_data_collection_mode = true;
+  next_button_data_collection_data = data;
   nextButtonDataCollectionItemLimit = data["item_limit"];
 }
 
 function nextButtonDataCollectionModeOff(){
-  nextButtonDataCollectionMode = false;
+  next_button_data_collection_mode = false;
 }
 
 function nextButtonDataCollectionNotify(){
-  if (nextButtonDataCollectionMode){
-    if (whole_list.length < nextButtonDataCollectionItemLimit){
-      utilities.sendMessage ("mainpanel", "content", "nextButtonDataCollection", nextButtonDataCollectionData);
+  if (next_button_data_collection_mode){
+    if (whole_list.length < next_button_data_collection_item_limit){
+      utilities.sendMessage ("mainpanel", "content", "nextButtonDataCollection", next_button_data_collection_data);
     }
     else {
-      nextButtonDataCollectionMode = false;
+      next_button_data_collection_mode = false;
     }
   }
 }

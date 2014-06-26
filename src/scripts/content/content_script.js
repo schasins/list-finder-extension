@@ -15,14 +15,14 @@
  * Listeners and general set up
 **********************************************************************/
 
-var currentlyOn = false;
+var currently_on = false;
 
 function setUp(){
   document.addEventListener('mouseover', outline, true);
   document.addEventListener('mouseout', unoutline, true);
   document.addEventListener('click', newNode, true);
   
-  utilities.listenForMessage("background", "content", "currentlyOn", function(msg_co){currentlyOn = msg_co;});
+  utilities.listenForMessage("background", "content", "currentlyOn", function(msg_co){currently_on = msg_co;});
   utilities.listenForMessage("mainpanel", "content", "nextButtons", handleNextButtons);
   utilities.listenForMessage("mainpanel", "content", "itemLimit", handleItemLimit);
   utilities.listenForMessage("mainpanel", "content", "run", wholeList);
@@ -42,7 +42,7 @@ var stored_background_colors = {};
 var stored_outlines = {};
 
 function outline(event){
-  if (!currentlyOn){return;}
+  if (!currently_on){return;}
   
   var $target = $(event.target);
   stored_background_colors[$target.html()] = $target.css('background-color');
@@ -52,7 +52,7 @@ function outline(event){
 }
 
 function unoutline(event){
-  if (!currentlyOn){return;}
+  if (!currently_on){return;}
   
   var $target = $(event.target);
   $target.css('background-color', stored_background_colors[$target.html()]);
@@ -60,7 +60,7 @@ function unoutline(event){
 }
 
 /**********************************************************************
- * Interpreter for our tiny language of domain selectors
+ * Domain-specific functionality
 **********************************************************************/
 
 /* Available features:
@@ -101,7 +101,7 @@ function getFeature(element, feature){
   }
 }
 
-function featureOk(feature, value, acceptable_values){
+function featureMatch(feature, value, acceptable_values){
   if (feature == "xpath"){
     return _.reduce(acceptable_values, function(acc, av){ return (acc || (xPathMatch(av, value))); }, false);
   }
@@ -115,49 +115,65 @@ function featureOk(feature, value, acceptable_values){
   }
 }
 
-function interpretListSelector(feature_dict, exclude_first){
-  var nodes = document.getElementsByTagName("*");
-  var node_list = [];
-  for (i=0;i<nodes.length;i++){
-    var node = nodes[i];
-    var node_ok = true;
-    for (var feature in feature_dict){
-      var value = getFeature(node,feature);
-      var acceptable_values = feature_dict[feature];
-      if (!featureOk(feature, value, acceptable_values)){
-        node_ok = false;
-        break;
-      }
-    }
-    if (node_ok){
-      node_list.push(node);
-    }
+function collapseValues(feature, values){
+  if (feature == "xpath"){
+    return xPathReduction(values);
   }
-  if (exclude_first && node_list.length > 0){
-    return node_list.slice(1,node_list.length);
-  }
-  return node_list;
+  return _.uniq(values);
+}
+
+function getAllCandidates(){
+  return document.getElementsByTagName("*");
 }
 
 /**********************************************************************
- * Generating domain selector from user clicks
+ * Domain-independent interpreter
+**********************************************************************/
+
+function interpretListSelector(feature_dict, exclude_first){
+  var candidates = getAllCandidates();
+  var list = [];
+  for (i=0;i<candidates.length;i++){
+    var candidate = candidates[i];
+    var candidate_ok = true;
+    for (var feature in feature_dict){
+      var value = getFeature(candidate,feature);
+      var acceptable_values = feature_dict[feature]["values"];
+      var pos = feature_dict[feature]["pos"];
+      var candidate_feature_match = featureMatch(feature, value, acceptable_values);
+      if ((pos && !candidate_feature_match) || (!pos && candidate_feature_match)){
+        candidate_ok = false;
+        break;
+      }
+    }
+    if (candidate_ok){
+      list.push(candidate);
+    }
+  }
+  if (exclude_first && list.length > 0){
+    return list.slice(1,list.length);
+  }
+  return list;
+}
+
+/**********************************************************************
+ * User interface
 **********************************************************************/
 
 var positive_nodes = [];
 var negative_nodes = [];
-var currentSelector = null;
-var currentSelectorNodes = [];
-var firstClick = true;
-var likeliestSibling = null;
+var current_selector = null;
+var current_selector_nodes = [];
+var first_click = true;
+var likeliest_sibling = null;
 
 function newNode(event){
-  if (!currentlyOn){
-    console.log("returning: "+currentlyOn);
+  if (!currently_on){
     return;
   }
   
   //dehighlight our old list
-  highlight(currentSelectorNodes,"initial");
+  highlight(current_selector_nodes,"initial");
   
   event.stopPropagation();
   event.preventDefault();
@@ -165,14 +181,12 @@ function newNode(event){
   var target = event.target;
   //decide whether it's a positive or negative example based on whether
   //it's in the old list
-  if (_.contains(currentSelectorNodes,target)){
+  if (_.contains(current_selector_nodes,target)){
     negative_nodes.push(target);
     //if this node was in positive_nodes, remove it
-    //if it prompted the addition of a sibling node (see below),
-    //remove the sibling node too
-    positive_nodes = _.without(positive_nodes,target,target["sibling"]);
+    positive_nodes = _.without(positive_nodes,target);
     //if this was our first negative node, remove the likeliest sibling
-    positive_nodes = _.without(positive_nodes,likeliestSibling);
+    positive_nodes = _.without(positive_nodes,likeliest_sibling);
   }
   else{
     positive_nodes.push(target);
@@ -183,27 +197,25 @@ function newNode(event){
   //if this is the first click on the page, (so only one pos example)
   //try to make a guess about what the list will be
   //do this by adding a second likely list member to positive examples
-  if (firstClick){
-    var likely_member = findSibling(positive_nodes[0]);
-    if (likely_member != null){
-      positive_nodes[0]["sibling"] = likely_member;
-      positive_nodes.push(likely_member);
-      likeliestSibling = likely_member;
+  if (first_click){
+    var likeliest_sibling = findSibling(positive_nodes[0]);
+    if (likeliest_sibling != null){
+      positive_nodes.push(likeliest_sibling);
     }
-    firstClick = false;
+    first_click = false;
   }
   
   //synthesize a selector with our new information (node)
   synthesizeSelector();
   
   //highlight our new list and send it to the panel
-  highlight(currentSelectorNodes,"#9EE4FF");
-  var textList = _.map(currentSelectorNodes,function(a){return $(a).text();});
+  highlight(current_selector_nodes,"#9EE4FF");
+  var textList = _.map(current_selector_nodes,function(a){return $(a).text();});
   utilities.sendMessage("content", "mainpanel", "list", textList);
   
   //log the new stuff
-  console.log(currentSelector);
-  console.log(currentSelectorNodes);
+  console.log(current_selector);
+  console.log(current_selector_nodes);
 }
 
 function findSibling(node){
@@ -225,13 +237,15 @@ function findSibling(node){
   return null;
 }
 
+var almost_all_features = _.without(all_features, "xpath");
+
 function synthesizeSelector(features){
   if(typeof(features)==='undefined') {features = ["tag", "xpath"];}
   
   var feature_dict = featureDict(features, positive_nodes);
-  if (feature_dict.hasOwnProperty("xpath") && feature_dict["xpath"].length > 3 && features !== all_features){
+  if (feature_dict.hasOwnProperty("xpath") && feature_dict["xpath"].length > 3 && features !== almost_all_features){
     //xpath alone can't handle our positive nodes
-    return synthesizeSelector(_.without(all_features, "xpath"));
+    return synthesizeSelector(almost_all_features);
   }
   //if (feature_dict.hasOwnProperty("tag") && feature_dict["tag"].length > 1 && features !== all_features){
   //  return synthesizeSelector(all_features);
@@ -246,9 +260,9 @@ function synthesizeSelector(features){
       if (i == 0){
         exclude_first = true;
       }
-      else if (features !== all_features) {
+      else if (features !== almost_all_features) {
         //xpaths weren't enough to exclude nodes we need to exclude
-        return synthesizeSelector(_.without(all_features, "xpath"));
+        return synthesizeSelector(almost_all_features);
       }
       else {
         //we're using all our features, and still haven't excluded
@@ -258,15 +272,15 @@ function synthesizeSelector(features){
   }
   
   //update our globals that track the current selector and list
-  currentSelectorNodes = interpretListSelector(feature_dict, exclude_first);
-  currentSelector = {"dict": feature_dict, "exclude_first": exclude_first};
+  current_selector_nodes = interpretListSelector(feature_dict, exclude_first);
+  current_selector = {"dict": feature_dict, "exclude_first": exclude_first};
 }
 
 function featureDict(features, positive_nodes){
   //initialize empty feature dict
   var feature_dict = {};
   for (var i = 0; i < features.length; i++){
-    feature_dict[features[i]] = [];
+    feature_dict[features[i]] = {"values":[],"pos":true};
   }
   //add all positive nodes' values into the feature dict
   for (var i = 0; i < positive_nodes.length; i++){
@@ -274,7 +288,7 @@ function featureDict(features, positive_nodes){
     for (var j = 0; j < features.length; j++){
       var feature = features[j];
       var value = getFeature(node,feature);
-      feature_dict[feature].push(value);
+      feature_dict[feature]["values"].push(value);
     }
   }
   
@@ -282,13 +296,9 @@ function featureDict(features, positive_nodes){
   //also need to handle xpath differently, merging to xpaths with *s
   var filtered_feature_dict = {};
   for (var feature in feature_dict){
-    var values = _.uniq(feature_dict[feature]);
-    if (feature == "xpath"){
-      //always add xpath
-      filtered_feature_dict[feature] = xPathReduction(values);
-    }
-    if (values.length <= 3 && values.length != positive_nodes.length && values.length != (positive_nodes.length - 1)){
-        filtered_feature_dict[feature] = values;
+    var values = collapseValues(feature, feature_dict[feature]["values"]);
+    if (feature == "xpath" || (values.length <= 3 && values.length != positive_nodes.length && values.length != (positive_nodes.length - 1))){
+      filtered_feature_dict[feature] = {"values":values,"pos":true};
     }
   }
   return filtered_feature_dict;
@@ -449,10 +459,10 @@ var steps_since_progress = 0;
 var whole_list_length = 0;
 
 function useCurrentSelector(){
-    highlight(currentSelectorNodes,"initial");
-    currentSelectorNodes = interpretListSelector(currentSelector["dict"], currentSelector["exclude_first"]);
-    highlight(currentSelectorNodes,"#9EE4FF");
-    list = _.map(currentSelectorNodes,function(a){return $(a).text();});
+    highlight(current_selector_nodes,"initial");
+    current_selector_nodes = interpretListSelector(current_selector["dict"], current_selector["exclude_first"]);
+    highlight(current_selector_nodes,"#9EE4FF");
+    list = _.map(current_selector_nodes,function(a){return $(a).text();});
     return list;
 }
 
@@ -489,7 +499,7 @@ function wholeList(){
     wholeListHelper(get_more_items,send_full);
   }
   else if (next_button_type === "next_button"){
-    var data = {"currentSelector":currentSelector, 
+    var data = {"current_selector":current_selector, 
                 "next_or_more_button_tag": next_or_more_button_tag,
                 "next_or_more_button_text": next_or_more_button_text,
                 "next_or_more_button_id": next_or_more_button_id,
@@ -502,7 +512,7 @@ function wholeList(){
 }
 
 function nextButtonDataCollection(data){
-  currentSelector = data["currentSelector"];
+  current_selector = data["current_selector"];
   next_or_more_button_tag = data["next_or_more_button_tag"];
   next_or_more_button_text = data["next_or_more_button_text"];
   next_or_more_button_id = data["next_or_more_button_id"];
