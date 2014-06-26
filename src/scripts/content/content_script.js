@@ -101,7 +101,7 @@ function getFeature(element, feature){
   }
 }
 
-function featureOk(feature, value, acceptable_values){
+function featureMatch(feature, value, acceptable_values){
   if (feature == "xpath"){
     return _.reduce(acceptable_values, function(acc, av){ return (acc || (xPathMatch(av, value))); }, false);
   }
@@ -131,8 +131,10 @@ function interpretListSelector(feature_dict, exclude_first){
     var candidate_ok = true;
     for (var feature in feature_dict){
       var value = getFeature(candidate,feature);
-      var acceptable_values = feature_dict[feature];
-      if (!featureOk(feature, value, acceptable_values)){
+      var acceptable_values = feature_dict[feature]["values"];
+      var pos = feature_dict[feature]["pos"];
+      var candidate_feature_match = featureMatch(feature, value, acceptable_values);
+      if ((pos && !candidate_feature_match) || (!pos && candidate_feature_match)){
         candidate_ok = false;
         break;
       }
@@ -274,7 +276,7 @@ function featureDict(features, positive_nodes){
   //initialize empty feature dict
   var feature_dict = {};
   for (var i = 0; i < features.length; i++){
-    feature_dict[features[i]] = [];
+    feature_dict[features[i]] = {"values":[],"pos":true};
   }
   //add all positive nodes' values into the feature dict
   for (var i = 0; i < positive_nodes.length; i++){
@@ -282,7 +284,7 @@ function featureDict(features, positive_nodes){
     for (var j = 0; j < features.length; j++){
       var feature = features[j];
       var value = getFeature(node,feature);
-      feature_dict[feature].push(value);
+      feature_dict[feature]["values"].push(value);
     }
   }
   
@@ -290,13 +292,13 @@ function featureDict(features, positive_nodes){
   //also need to handle xpath differently, merging to xpaths with *s
   var filtered_feature_dict = {};
   for (var feature in feature_dict){
-    var values = _.uniq(feature_dict[feature]);
+    var values = _.uniq(feature_dict[feature]["values"]);
     if (feature == "xpath"){
       //always add xpath
-      filtered_feature_dict[feature] = xPathReduction(values);
+      filtered_feature_dict[feature] = {"values":xPathReduction(values),"pos":true};
     }
-    if (values.length <= 3 && values.length != positive_nodes.length && values.length != (positive_nodes.length - 1)){
-        filtered_feature_dict[feature] = values;
+    else if (values.length <= 3 && values.length != positive_nodes.length && values.length != (positive_nodes.length - 1)){
+        filtered_feature_dict[feature] = {"values":values,"pos":true};
     }
   }
   return filtered_feature_dict;
