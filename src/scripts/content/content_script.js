@@ -198,7 +198,7 @@ function newNode(event){
   //try to make a guess about what the list will be
   //do this by adding a second likely list member to positive examples
   if (first_click){
-    var likeliest_sibling = findSibling(positive_nodes[0]);
+    likeliest_sibling = findSibling(positive_nodes[0]);
     if (likeliest_sibling != null){
       positive_nodes.push(likeliest_sibling);
     }
