@@ -300,11 +300,7 @@ function featureDict(features, positive_nodes){
   var filtered_feature_dict = {};
   for (var feature in feature_dict){
     var values = collapseValues(feature, feature_dict[feature]["values"]);
-    if (feature == "xpath"){
-      //always add xpath
-      filtered_feature_dict[feature] = {"values":values,"pos":true};
-    }
-    else if (values.length <= 3 && values.length != positive_nodes.length && values.length != (positive_nodes.length - 1)){
+    if (feature == "xpath" || (values.length <= 3 && values.length != positive_nodes.length && values.length != (positive_nodes.length - 1))){
       filtered_feature_dict[feature] = {"values":values,"pos":true};
     }
   }
