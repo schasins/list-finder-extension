@@ -115,6 +115,13 @@ function featureMatch(feature, value, acceptable_values){
   }
 }
 
+function collapseValues(feature, values){
+  if (feature == "xpath"){
+    return xPathReduction(values);
+  }
+  return _.uniq(values);
+}
+
 function getAllCandidates(){
   return document.getElementsByTagName("*");
 }
@@ -292,13 +299,13 @@ function featureDict(features, positive_nodes){
   //also need to handle xpath differently, merging to xpaths with *s
   var filtered_feature_dict = {};
   for (var feature in feature_dict){
-    var values = _.uniq(feature_dict[feature]["values"]);
+    var values = collapseValues(feature, feature_dict[feature]["values"]);
     if (feature == "xpath"){
       //always add xpath
-      filtered_feature_dict[feature] = {"values":xPathReduction(values),"pos":true};
+      filtered_feature_dict[feature] = {"values":values,"pos":true};
     }
     else if (values.length <= 3 && values.length != positive_nodes.length && values.length != (positive_nodes.length - 1)){
-        filtered_feature_dict[feature] = {"values":values,"pos":true};
+      filtered_feature_dict[feature] = {"values":values,"pos":true};
     }
   }
   return filtered_feature_dict;
