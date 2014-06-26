@@ -78,11 +78,15 @@ var all_features = ["tag", "class",
   "left", "bottom", "right", "top", "width", "height",
   "font-size", "font-family", "font-style", "font-weight", "color",
   "background-color", 
+  "preceding-text",
   "xpath"];
 
 function getFeature(element, feature){
   if (feature == "xpath"){
     return xPathToXPathList(nodeToXPath(element));
+  }
+  else if (feature == "preceding-text"){
+    return $(element).prev().text();
   }
   else if (_.contains(["tag","class"],feature)){
     return element[feature+"Name"];
