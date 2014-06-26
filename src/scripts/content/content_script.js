@@ -15,14 +15,14 @@
  * Listeners and general set up
 **********************************************************************/
 
-var currentlyOn = false;
+var currently_on = false;
 
 function setUp(){
   document.addEventListener('mouseover', outline, true);
   document.addEventListener('mouseout', unoutline, true);
   document.addEventListener('click', newNode, true);
   
-  utilities.listenForMessage("background", "content", "currentlyOn", function(msg_co){currentlyOn = msg_co;});
+  utilities.listenForMessage("background", "content", "currentlyOn", function(msg_co){currently_on = msg_co;});
   utilities.listenForMessage("mainpanel", "content", "nextButtons", handleNextButtons);
   utilities.listenForMessage("mainpanel", "content", "itemLimit", handleItemLimit);
   utilities.listenForMessage("mainpanel", "content", "run", wholeList);
@@ -42,7 +42,7 @@ var stored_background_colors = {};
 var stored_outlines = {};
 
 function outline(event){
-  if (!currentlyOn){return;}
+  if (!currently_on){return;}
   
   var $target = $(event.target);
   stored_background_colors[$target.html()] = $target.css('background-color');
@@ -52,7 +52,7 @@ function outline(event){
 }
 
 function unoutline(event){
-  if (!currentlyOn){return;}
+  if (!currently_on){return;}
   
   var $target = $(event.target);
   $target.css('background-color', stored_background_colors[$target.html()]);
@@ -168,7 +168,7 @@ var first_click = true;
 var likeliest_sibling = null;
 
 function newNode(event){
-  if (!currentlyOn){
+  if (!currently_on){
     return;
   }
   
@@ -237,13 +237,15 @@ function findSibling(node){
   return null;
 }
 
+var almost_all_features = _.without(all_features, "xpath");
+
 function synthesizeSelector(features){
   if(typeof(features)==='undefined') {features = ["tag", "xpath"];}
   
   var feature_dict = featureDict(features, positive_nodes);
-  if (feature_dict.hasOwnProperty("xpath") && feature_dict["xpath"].length > 3 && features !== all_features){
+  if (feature_dict.hasOwnProperty("xpath") && feature_dict["xpath"].length > 3 && features !== almost_all_features){
     //xpath alone can't handle our positive nodes
-    return synthesizeSelector(_.without(all_features, "xpath"));
+    return synthesizeSelector(almost_all_features);
   }
   //if (feature_dict.hasOwnProperty("tag") && feature_dict["tag"].length > 1 && features !== all_features){
   //  return synthesizeSelector(all_features);
@@ -258,9 +260,9 @@ function synthesizeSelector(features){
       if (i == 0){
         exclude_first = true;
       }
-      else if (features !== all_features) {
+      else if (features !== almost_all_features) {
         //xpaths weren't enough to exclude nodes we need to exclude
-        return synthesizeSelector(_.without(all_features, "xpath"));
+        return synthesizeSelector(almost_all_features);
       }
       else {
         //we're using all our features, and still haven't excluded
