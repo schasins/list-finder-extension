@@ -481,6 +481,7 @@ function wholeListHelper(get_more_items_func,send_message_func){
 }
 
 function wholeList(){
+  console.log("in wholeList");
   var send_full = function(list){utilities.sendMessage("content", "mainpanel", "list", list);};
   var send_partial = function(list){utilities.sendMessage("content", "mainpanel", "partialList", list);};
   var get_more_items = function(){var button = findButton(); if (button !== null){document.removeEventListener('click', newNode, true); button.click(); document.addEventListener('click', newNode, true);}};
@@ -588,16 +589,39 @@ function highlight(nodeList,color){
   $(nodeList).css('background-color', color);
 }
 
-function levenshteinDistance (s, t) {
-        if (s.length === 0) return t.length;
-        if (t.length === 0) return s.length;
+function levenshteinDistance (a, b) {
+  if(a.length === 0) return b.length; 
+  if(b.length === 0) return a.length; 
  
-        return Math.min(
-                levenshteinDistance(s.substr(1), t) + 1,
-                levenshteinDistance(t.substr(1), s) + 1,
-                levenshteinDistance(s.substr(1), t.substr(1)) + (s[0] !== t[0] ? 1 : 0)
-        );
-}
+  var matrix = [];
+ 
+  // increment along the first column of each row
+  var i;
+  for(i = 0; i <= b.length; i++){
+    matrix[i] = [i];
+  }
+ 
+  // increment each column in the first row
+  var j;
+  for(j = 0; j <= a.length; j++){
+    matrix[0][j] = j;
+  }
+ 
+  // Fill in the rest of the matrix
+  for(i = 1; i <= b.length; i++){
+    for(j = 1; j <= a.length; j++){
+      if(b.charAt(i-1) == a.charAt(j-1)){
+        matrix[i][j] = matrix[i-1][j-1];
+      } else {
+        matrix[i][j] = Math.min(matrix[i-1][j-1] + 1, // substitution
+                                Math.min(matrix[i][j-1] + 1, // insertion
+                                         matrix[i-1][j] + 1)); // deletion
+      }
+    }
+  }
+ 
+  return matrix[b.length][a.length];
+};
 
 function isNumber(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
