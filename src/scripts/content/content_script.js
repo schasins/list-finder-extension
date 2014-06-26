@@ -60,7 +60,7 @@ function unoutline(event){
 }
 
 /**********************************************************************
- * Interpreter for our tiny language of domain selectors
+ * Domain-specific functionality
 **********************************************************************/
 
 /* Available features:
@@ -115,28 +115,36 @@ function featureOk(feature, value, acceptable_values){
   }
 }
 
+function getAllCandidates(){
+  return document.getElementsByTagName("*");
+}
+
+/**********************************************************************
+ * Domain-independent interpreter
+**********************************************************************/
+
 function interpretListSelector(feature_dict, exclude_first){
-  var nodes = document.getElementsByTagName("*");
-  var node_list = [];
-  for (i=0;i<nodes.length;i++){
-    var node = nodes[i];
-    var node_ok = true;
+  var candidates = getAllCandidates();
+  var list = [];
+  for (i=0;i<candidates.length;i++){
+    var candidate = candidates[i];
+    var candidate_ok = true;
     for (var feature in feature_dict){
-      var value = getFeature(node,feature);
+      var value = getFeature(candidate,feature);
       var acceptable_values = feature_dict[feature];
       if (!featureOk(feature, value, acceptable_values)){
-        node_ok = false;
+        candidate_ok = false;
         break;
       }
     }
-    if (node_ok){
-      node_list.push(node);
+    if (candidate_ok){
+      list.push(candidate);
     }
   }
-  if (exclude_first && node_list.length > 0){
-    return node_list.slice(1,node_list.length);
+  if (exclude_first && list.length > 0){
+    return list.slice(1,list.length);
   }
-  return node_list;
+  return list;
 }
 
 /**********************************************************************
